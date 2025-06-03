@@ -9,6 +9,48 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      baixas_contas: {
+        Row: {
+          banco_id: string
+          conta_id: string
+          created_at: string
+          data_baixa: string
+          id: string
+          valor: number
+        }
+        Insert: {
+          banco_id: string
+          conta_id: string
+          created_at?: string
+          data_baixa: string
+          id?: string
+          valor: number
+        }
+        Update: {
+          banco_id?: string
+          conta_id?: string
+          created_at?: string
+          data_baixa?: string
+          id?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "baixas_contas_banco_id_fkey"
+            columns: ["banco_id"]
+            isOneToOne: false
+            referencedRelation: "bancos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baixas_contas_conta_id_fkey"
+            columns: ["conta_id"]
+            isOneToOne: false
+            referencedRelation: "contas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bancos: {
         Row: {
           agencia: string | null
@@ -18,6 +60,7 @@ export type Database = {
           id: string
           nome: string
           saldo: number | null
+          tipo_banco: string
           updated_at: string
         }
         Insert: {
@@ -28,6 +71,7 @@ export type Database = {
           id?: string
           nome: string
           saldo?: number | null
+          tipo_banco: string
           updated_at?: string
         }
         Update: {
@@ -38,6 +82,7 @@ export type Database = {
           id?: string
           nome?: string
           saldo?: number | null
+          tipo_banco?: string
           updated_at?: string
         }
         Relationships: []
@@ -80,6 +125,7 @@ export type Database = {
       }
       contas: {
         Row: {
+          banco_baixa_id: string | null
           cliente_id: string | null
           created_at: string
           data_pagamento: string | null
@@ -95,8 +141,10 @@ export type Database = {
           tipo: string
           updated_at: string
           valor: number
+          valor_baixa: number | null
         }
         Insert: {
+          banco_baixa_id?: string | null
           cliente_id?: string | null
           created_at?: string
           data_pagamento?: string | null
@@ -112,8 +160,10 @@ export type Database = {
           tipo: string
           updated_at?: string
           valor: number
+          valor_baixa?: number | null
         }
         Update: {
+          banco_baixa_id?: string | null
           cliente_id?: string | null
           created_at?: string
           data_pagamento?: string | null
@@ -129,8 +179,16 @@ export type Database = {
           tipo?: string
           updated_at?: string
           valor?: number
+          valor_baixa?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "contas_banco_baixa_id_fkey"
+            columns: ["banco_baixa_id"]
+            isOneToOne: false
+            referencedRelation: "bancos"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "contas_cliente_id_fkey"
             columns: ["cliente_id"]

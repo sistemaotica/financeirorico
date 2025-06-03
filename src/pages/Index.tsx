@@ -5,13 +5,15 @@ import Layout from '@/components/Layout';
 import Dashboard from '@/components/Dashboard';
 import Lancamentos from '@/components/Lancamentos';
 import ContasPagarReceber from '@/components/ContasPagarReceber';
+import CadastroBanco from '@/components/CadastroBanco';
+import CadastroCliente from '@/components/CadastroCliente';
+import CadastroFornecedor from '@/components/CadastroFornecedor';
 
 const Index = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentPage, setCurrentPage] = useState('dashboard');
 
   const handleLogin = (email: string, password: string) => {
-    // Aqui você faria a validação real do login
     console.log('Login attempt:', { email, password });
     setIsAuthenticated(true);
   };
@@ -48,26 +50,11 @@ const Index = () => {
           </div>
         );
       case 'cadastro-banco':
-        return (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-2xl font-bold mb-4">Cadastrar Banco</h2>
-            <p className="text-gray-600">Cadastro de banco será implementado aqui.</p>
-          </div>
-        );
+        return <CadastroBanco />;
       case 'cadastro-cliente':
-        return (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-2xl font-bold mb-4">Cadastrar Cliente</h2>
-            <p className="text-gray-600">Cadastro de cliente será implementado aqui.</p>
-          </div>
-        );
+        return <CadastroCliente />;
       case 'cadastro-fornecedor':
-        return (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-2xl font-bold mb-4">Cadastrar Fornecedor</h2>
-            <p className="text-gray-600">Cadastro de fornecedor será implementado aqui.</p>
-          </div>
-        );
+        return <CadastroFornecedor />;
       default:
         return <Dashboard />;
     }

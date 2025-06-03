@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -10,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import BaixaContaDialog from './dialogs/BaixaContaDialog';
 
 interface Cliente {
   id: string;
@@ -19,6 +19,13 @@ interface Cliente {
 interface Fornecedor {
   id: string;
   nome: string;
+}
+
+interface Banco {
+  id: string;
+  nome: string;
+  agencia: string;
+  conta: string;
 }
 
 interface Conta {
@@ -31,6 +38,7 @@ interface Conta {
   numero_nota: string;
   data_vencimento: string;
   valor: number;
+  valor_baixa: number;
   parcela_numero: number;
   parcela_total: number;
   status: 'aberto' | 'pago' | 'vencido';
@@ -41,8 +49,11 @@ interface Conta {
 const ContasPagarReceber = () => {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
+  const [bancos, setBancos] = useState<Banco[]>([]);
   const [contas, setContas] = useState<Conta[]>([]);
   const [filtroStatus, setFiltroStatus] = useState<string>('todos');
+  const [baixaDialogOpen, setBaixaDialogOpen] = useState(false);
+  const [selectedConta, setSelectedConta] = useState<Conta | null>(null);
   const [formData, setFormData] = useState({
     tipo: 'pagar' as 'pagar' | 'receber',
     destino_tipo: 'fornecedor' as 'cliente' | 'fornecedor',
@@ -59,6 +70,7 @@ const ContasPagarReceber = () => {
   useEffect(() => {
     carregarClientes();
     carregarFornecedores();
+    carregarBancos();
     carregarContas();
   }, []);
 
@@ -86,6 +98,18 @@ const ContasPagarReceber = () => {
     }
   };
 
+  const carregarBancos = async () => {
+    const { data, error } = await supabase
+      .from('bancos')
+      .select('id, nome, agencia, conta')
+      .eq('ativo', true)
+      .order('nome');
+
+    if (!error) {
+      setBancos(data || []);
+    }
+  };
+
   const carregarContas = async () => {
     const { data, error } = await supabase
       .from('contas')
@@ -103,7 +127,6 @@ const ContasPagarReceber = () => {
         variant: "destructive"
       });
     } else {
-      // Cast the tipo, destino_tipo and status fields to the correct types
       const typedData = (data || []).map(item => ({
         ...item,
         tipo: item.tipo as 'pagar' | 'receber',
@@ -209,6 +232,60 @@ const ContasPagarReceber = () => {
         valor_total: ''
       });
       
+      carregarContas();
+    }
+  };
+
+  const handleEdit = async (conta: Conta) => {
+    // Implementar edição da conta
+    console.log('Editar conta:', conta);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Tem certeza que deseja excluir esta conta?')) {
+      const { error } = await supabase
+        .from('contas')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        toast({
+          title: "Erro",
+          description: "Erro ao excluir conta",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Sucesso",
+          description: "Conta excluída com sucesso"
+        });
+        carregarContas();
+      }
+    }
+  };
+
+  const handleBaixa = (conta: Conta) => {
+    setSelectedConta(conta);
+    setBaixaDialogOpen(true);
+  };
+
+  const handleSaveBaixa = async (baixaData: { conta_id: string; banco_id: string; valor: number; data_baixa: string }) => {
+    const { error } = await supabase
+      .from('baixas_contas')
+      .insert(baixaData);
+
+    if (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao realizar baixa",
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Sucesso",
+        description: "Baixa realizada com sucesso"
+      });
+      setBaixaDialogOpen(false);
       carregarContas();
     }
   };
@@ -395,6 +472,7 @@ const ContasPagarReceber = () => {
                       <TableHead>Parcela</TableHead>
                       <TableHead>Valor</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -423,6 +501,15 @@ const ContasPagarReceber = () => {
                             {conta.status === 'pago' ? 'Pago' : conta.status === 'vencido' ? 'Vencido' : 'Em Aberto'}
                           </span>
                         </TableCell>
+                        <TableCell>
+                          <div className="flex space-x-1">
+                            <Button size="sm" variant="outline" onClick={() => handleEdit(conta)}>Editar</Button>
+                            <Button size="sm" variant="destructive" onClick={() => handleDelete(conta.id)}>Excluir</Button>
+                            {conta.status !== 'pago' && (
+                              <Button size="sm" variant="default" onClick={() => handleBaixa(conta)}>Baixa</Button>
+                            )}
+                          </div>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -442,6 +529,7 @@ const ContasPagarReceber = () => {
                       <TableHead>Parcela</TableHead>
                       <TableHead>Valor</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -470,6 +558,15 @@ const ContasPagarReceber = () => {
                             {conta.status === 'pago' ? 'Pago' : conta.status === 'vencido' ? 'Vencido' : 'Em Aberto'}
                           </span>
                         </TableCell>
+                        <TableCell>
+                          <div className="flex space-x-1">
+                            <Button size="sm" variant="outline" onClick={() => handleEdit(conta)}>Editar</Button>
+                            <Button size="sm" variant="destructive" onClick={() => handleDelete(conta.id)}>Excluir</Button>
+                            {conta.status !== 'pago' && (
+                              <Button size="sm" variant="default" onClick={() => handleBaixa(conta)}>Baixa</Button>
+                            )}
+                          </div>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -479,6 +576,14 @@ const ContasPagarReceber = () => {
           </Tabs>
         </CardContent>
       </Card>
+
+      <BaixaContaDialog
+        open={baixaDialogOpen}
+        onOpenChange={setBaixaDialogOpen}
+        conta={selectedConta}
+        bancos={bancos}
+        onSave={handleSaveBaixa}
+      />
     </div>
   );
 };

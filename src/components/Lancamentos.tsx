@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -9,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
+import EditLancamentoDialog from './dialogs/EditLancamentoDialog';
 
 interface Banco {
   id: string;
@@ -34,6 +34,8 @@ interface Lancamento {
 const Lancamentos = () => {
   const [bancos, setBancos] = useState<Banco[]>([]);
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedLancamento, setSelectedLancamento] = useState<Lancamento | null>(null);
   const [formData, setFormData] = useState({
     data: new Date().toISOString().split('T')[0],
     banco_id: '',
@@ -83,7 +85,6 @@ const Lancamentos = () => {
         variant: "destructive"
       });
     } else {
-      // Cast the tipo field to the correct type
       const typedData = (data || []).map(item => ({
         ...item,
         tipo: item.tipo as 'credito' | 'debito'
@@ -137,7 +138,66 @@ const Lancamentos = () => {
       });
       
       carregarLancamentos();
-      carregarBancos(); // Recarregar para atualizar saldos
+      carregarBancos();
+    }
+  };
+
+  const handleEdit = (lancamento: Lancamento) => {
+    setSelectedLancamento(lancamento);
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async (lancamento: Lancamento) => {
+    const { error } = await supabase
+      .from('lancamentos')
+      .update({
+        data: lancamento.data,
+        banco_id: lancamento.banco_id,
+        tipo: lancamento.tipo,
+        descricao: lancamento.descricao,
+        valor: lancamento.valor,
+        numero_nota_fiscal: lancamento.numero_nota_fiscal
+      })
+      .eq('id', lancamento.id);
+
+    if (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar lançamento",
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Sucesso",
+        description: "Lançamento atualizado com sucesso"
+      });
+      setEditDialogOpen(false);
+      carregarLancamentos();
+      carregarBancos();
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Tem certeza que deseja excluir este lançamento?')) {
+      const { error } = await supabase
+        .from('lancamentos')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        toast({
+          title: "Erro",
+          description: "Erro ao excluir lançamento",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Sucesso",
+          description: "Lançamento excluído com sucesso"
+        });
+        carregarLancamentos();
+        carregarBancos();
+      }
     }
   };
 
@@ -246,6 +306,7 @@ const Lancamentos = () => {
                   <TableHead>Tipo</TableHead>
                   <TableHead>Descrição</TableHead>
                   <TableHead>Valor</TableHead>
+                  <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -268,6 +329,24 @@ const Lancamentos = () => {
                     <TableCell className={lancamento.tipo === 'credito' ? 'text-green-600' : 'text-red-600'}>
                       {lancamento.tipo === 'credito' ? '+' : '-'} R$ {lancamento.valor.toFixed(2)}
                     </TableCell>
+                    <TableCell>
+                      <div className="flex space-x-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEdit(lancamento)}
+                        >
+                          Editar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDelete(lancamento.id)}
+                        >
+                          Excluir
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -275,6 +354,14 @@ const Lancamentos = () => {
           </div>
         </CardContent>
       </Card>
+
+      <EditLancamentoDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        lancamento={selectedLancamento}
+        bancos={bancos}
+        onSave={handleSaveEdit}
+      />
     </div>
   );
 };
