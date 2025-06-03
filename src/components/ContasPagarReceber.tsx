@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -13,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import BaixaContaDialog from './dialogs/BaixaContaDialog';
 import EditContaDialog from './dialogs/EditContaDialog';
+import DesfazerMovimentacaoDialog from './dialogs/DesfazerMovimentacaoDialog';
 
 interface Cliente {
   id: string;
@@ -68,7 +67,8 @@ const ContasPagarReceber = () => {
   const [filtroStatus, setFiltroStatus] = useState<string>('todos');
   const [baixaDialogOpen, setBaixaDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [selectedConta, setSelectedConta] = useState<Conta | null>(null);
+  const [desfazerDialogOpen, setDesfazerDialogOpen] = useState(false);
+  const [contaParaDesfazer, setContaParaDesfazer] = useState<Conta | null>(null);
   const [formData, setFormData] = useState({
     tipo: 'pagar' as 'pagar' | 'receber',
     destino_tipo: 'fornecedor' as 'cliente' | 'fornecedor',
@@ -168,22 +168,27 @@ const ContasPagarReceber = () => {
     const parcelas = [];
     const valorParcela = valorTotal / numParcelas;
     
-    // Usar a data exatamente como informada pelo usuário
+    // Usar a data exatamente como informada pelo usuário (sem conversão de timezone)
     const [ano, mes, dia] = dataVencimento.split('-').map(Number);
-    const dataBase = new Date(ano, mes - 1, dia); // mes - 1 porque Date usa 0-11 para meses
 
     for (let i = 0; i < numParcelas; i++) {
       let dataVenc: Date;
       
       if (i === 0) {
         // Primeira parcela: usar exatamente a data informada
-        dataVenc = new Date(dataBase);
+        dataVenc = new Date(ano, mes - 1, dia);
       } else {
-        // Demais parcelas: adicionar meses
+        // Demais parcelas: adicionar meses mantendo o mesmo dia
         dataVenc = new Date(ano, mes - 1 + i, dia);
+        
+        // Verificar se o dia existe no mês de destino (ex: 31 de janeiro -> 28/29 de fevereiro)
+        if (dataVenc.getDate() !== dia) {
+          // Se o dia não existe, usar o último dia do mês
+          dataVenc = new Date(ano, mes + i, 0);
+        }
       }
       
-      // Converter para string no formato YYYY-MM-DD
+      // Converter para string no formato YYYY-MM-DD usando UTC para evitar problemas de timezone
       const dataVencString = dataVenc.getFullYear() + '-' + 
         String(dataVenc.getMonth() + 1).padStart(2, '0') + '-' + 
         String(dataVenc.getDate()).padStart(2, '0');
@@ -414,50 +419,55 @@ const ContasPagarReceber = () => {
     carregarBaixasContas();
   };
 
-  const handleDesfazerMovimentacao = async (contaId: string) => {
-    if (!confirm('Tem certeza que deseja desfazer toda a movimentação desta conta? Isso reverterá todas as baixas.')) {
-      return;
-    }
+  const handleDesfazerMovimentacao = (conta: Conta) => {
+    setContaParaDesfazer(conta);
+    setDesfazerDialogOpen(true);
+  };
 
-    const baixasDaConta = baixasContas.filter(baixa => baixa.conta_id === contaId);
-    const conta = contas.find(c => c.id === contaId);
+  const handleConfirmDesfazer = async (bancoId: string) => {
+    if (!contaParaDesfazer) return;
 
-    if (!conta) return;
-
-    // Calcular valor total das baixas
+    const baixasDaConta = baixasContas.filter(baixa => baixa.conta_id === contaParaDesfazer.id);
     const valorTotalBaixas = baixasDaConta.reduce((total, baixa) => total + baixa.valor, 0);
 
-    // Revert all bank balance changes
-    for (const baixa of baixasDaConta) {
-      const banco = bancos.find(b => b.id === baixa.banco_id);
-      if (banco) {
-        let novoSaldo: number;
-        
-        // Para fornecedores (pagar): quando desfaz, soma ao saldo (credita de forma positiva)
-        // Para clientes (receber): quando desfaz, diminui do saldo (subtrai)
-        if (conta.destino_tipo === 'fornecedor') {
-          novoSaldo = banco.saldo + baixa.valor; // Creditar de forma positiva
-        } else {
-          novoSaldo = banco.saldo - baixa.valor; // Subtrair do saldo
-        }
-        
-        await supabase
-          .from('bancos')
-          .update({ saldo: novoSaldo })
-          .eq('id', baixa.banco_id);
-
-        // Update local bancos state
-        setBancos(prev => prev.map(b => 
-          b.id === baixa.banco_id ? { ...b, saldo: novoSaldo } : b
-        ));
+    // Atualizar saldo do banco selecionado
+    const banco = bancos.find(b => b.id === bancoId);
+    if (banco) {
+      let novoSaldo: number;
+      
+      // Para fornecedores: somar ao saldo (creditar)
+      // Para clientes: subtrair do saldo
+      if (contaParaDesfazer.destino_tipo === 'fornecedor') {
+        novoSaldo = banco.saldo + valorTotalBaixas;
+      } else {
+        novoSaldo = banco.saldo - valorTotalBaixas;
       }
+      
+      const { error: bancoError } = await supabase
+        .from('bancos')
+        .update({ saldo: novoSaldo })
+        .eq('id', bancoId);
+
+      if (bancoError) {
+        toast({
+          title: "Erro",
+          description: "Erro ao atualizar saldo do banco",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Update local bancos state
+      setBancos(prev => prev.map(b => 
+        b.id === bancoId ? { ...b, saldo: novoSaldo } : b
+      ));
     }
 
     // Delete all baixas for this conta
     const { error: deleteBaixasError } = await supabase
       .from('baixas_contas')
       .delete()
-      .eq('conta_id', contaId);
+      .eq('conta_id', contaParaDesfazer.id);
 
     if (deleteBaixasError) {
       toast({
@@ -475,7 +485,7 @@ const ContasPagarReceber = () => {
         valor_baixa: 0,
         status: 'aberto'
       })
-      .eq('id', contaId);
+      .eq('id', contaParaDesfazer.id);
 
     if (updateContaError) {
       toast({
@@ -486,9 +496,12 @@ const ContasPagarReceber = () => {
       return;
     }
 
+    const tipoOperacao = contaParaDesfazer.destino_tipo === 'fornecedor' ? 'creditado' : 'debitado';
+    const bancoNome = banco?.nome || 'banco selecionado';
+
     toast({
       title: "Sucesso",
-      description: "Movimentação desfeita com sucesso"
+      description: `Movimentação desfeita. R$ ${valorTotalBaixas.toFixed(2)} ${tipoOperacao} no ${bancoNome}`
     });
     
     carregarContas();
@@ -507,6 +520,10 @@ const ContasPagarReceber = () => {
 
   const getBaixasHistorico = (contaId: string) => {
     return baixasContas.filter(baixa => baixa.conta_id === contaId);
+  };
+
+  const getValorTotalBaixas = (contaId: string) => {
+    return getBaixasHistorico(contaId).reduce((total, baixa) => total + baixa.valor, 0);
   };
 
   return (
@@ -691,7 +708,7 @@ const ContasPagarReceber = () => {
                       <TableRow key={conta.id}>
                         <TableCell>{conta.clientes?.nome}</TableCell>
                         <TableCell>{conta.referencia}</TableCell>
-                        <TableCell>{new Date(conta.data_vencimento).toLocaleDateString('pt-BR')}</TableCell>
+                        <TableCell>{new Date(conta.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}</TableCell>
                         <TableCell>{conta.parcela_numero}/{conta.parcela_total}</TableCell>
                         <TableCell>R$ {conta.valor.toFixed(2)}</TableCell>
                         <TableCell>R$ {(conta.valor_baixa || 0).toFixed(2)}</TableCell>
@@ -712,7 +729,7 @@ const ContasPagarReceber = () => {
                               <Button size="sm" variant="default" onClick={() => handleBaixa(conta)}>Baixa</Button>
                             )}
                             {conta.valor_baixa > 0 && (
-                              <Button size="sm" variant="secondary" onClick={() => handleDesfazerMovimentacao(conta.id)}>
+                              <Button size="sm" variant="secondary" onClick={() => handleDesfazerMovimentacao(conta)}>
                                 Desfazer
                               </Button>
                             )}
@@ -722,7 +739,7 @@ const ContasPagarReceber = () => {
                               <strong>Histórico de Baixas:</strong>
                               {getBaixasHistorico(conta.id).map((baixa) => (
                                 <div key={baixa.id}>
-                                  {new Date(baixa.data_baixa).toLocaleDateString('pt-BR')}: R$ {baixa.valor.toFixed(2)}
+                                  {new Date(baixa.data_baixa + 'T00:00:00').toLocaleDateString('pt-BR')}: R$ {baixa.valor.toFixed(2)}
                                 </div>
                               ))}
                             </div>
@@ -755,7 +772,7 @@ const ContasPagarReceber = () => {
                       <TableRow key={conta.id}>
                         <TableCell>{conta.fornecedores?.nome}</TableCell>
                         <TableCell>{conta.referencia}</TableCell>
-                        <TableCell>{new Date(conta.data_vencimento).toLocaleDateString('pt-BR')}</TableCell>
+                        <TableCell>{new Date(conta.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}</TableCell>
                         <TableCell>{conta.parcela_numero}/{conta.parcela_total}</TableCell>
                         <TableCell>R$ {conta.valor.toFixed(2)}</TableCell>
                         <TableCell>R$ {(conta.valor_baixa || 0).toFixed(2)}</TableCell>
@@ -776,7 +793,7 @@ const ContasPagarReceber = () => {
                               <Button size="sm" variant="default" onClick={() => handleBaixa(conta)}>Baixa</Button>
                             )}
                             {conta.valor_baixa > 0 && (
-                              <Button size="sm" variant="secondary" onClick={() => handleDesfazerMovimentacao(conta.id)}>
+                              <Button size="sm" variant="secondary" onClick={() => handleDesfazerMovimentacao(conta)}>
                                 Desfazer
                               </Button>
                             )}
@@ -786,7 +803,7 @@ const ContasPagarReceber = () => {
                               <strong>Histórico de Baixas:</strong>
                               {getBaixasHistorico(conta.id).map((baixa) => (
                                 <div key={baixa.id}>
-                                  {new Date(baixa.data_baixa).toLocaleDateString('pt-BR')}: R$ {baixa.valor.toFixed(2)}
+                                  {new Date(baixa.data_baixa + 'T00:00:00').toLocaleDateString('pt-BR')}: R$ {baixa.valor.toFixed(2)}
                                 </div>
                               ))}
                             </div>
@@ -817,6 +834,15 @@ const ContasPagarReceber = () => {
         clientes={clientes}
         fornecedores={fornecedores}
         onSave={handleSaveEdit}
+      />
+
+      <DesfazerMovimentacaoDialog
+        open={desfazerDialogOpen}
+        onOpenChange={setDesfazerDialogOpen}
+        conta={contaParaDesfazer}
+        bancos={bancos}
+        valorTotalBaixas={contaParaDesfazer ? getValorTotalBaixas(contaParaDesfazer.id) : 0}
+        onConfirm={handleConfirmDesfazer}
       />
     </div>
   );
