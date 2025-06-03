@@ -328,6 +328,19 @@ const ContasPagarReceber = () => {
   const handleSaveBaixa = async (baixaData: { conta_id: string; banco_id: string; valor: number; data_baixa: string }) => {
     const conta = contas.find(c => c.id === baixaData.conta_id);
     
+    if (!conta) return;
+
+    // Validar se o valor da baixa não excede o valor em aberto
+    const valorEmAberto = conta.valor - (conta.valor_baixa || 0);
+    if (baixaData.valor > valorEmAberto) {
+      toast({
+        title: "Erro",
+        description: "O valor da baixa não pode ser maior que o valor em aberto",
+        variant: "destructive"
+      });
+      return;
+    }
+
     // Insert the baixa record
     const { error: baixaError } = await supabase
       .from('baixas_contas')
@@ -343,27 +356,36 @@ const ContasPagarReceber = () => {
     }
 
     // Update bank balance based on account type
-    if (conta) {
-      const valorAjuste = conta.destino_tipo === 'fornecedor' ? -baixaData.valor : baixaData.valor;
+    const banco = bancos.find(b => b.id === baixaData.banco_id);
+    if (banco) {
+      let novoSaldo: number;
       
-      const banco = bancos.find(b => b.id === baixaData.banco_id);
-      if (banco) {
-        const novoSaldo = banco.saldo + valorAjuste;
-        
-        const { error: bancoError } = await supabase
-          .from('bancos')
-          .update({ saldo: novoSaldo })
-          .eq('id', baixaData.banco_id);
-
-        if (bancoError) {
-          toast({
-            title: "Erro",
-            description: "Erro ao atualizar saldo do banco",
-            variant: "destructive"
-          });
-          return;
-        }
+      // Se a conta é de fornecedor (pagar), diminui do saldo
+      // Se a conta é de cliente (receber), soma ao saldo
+      if (conta.destino_tipo === 'fornecedor') {
+        novoSaldo = banco.saldo - baixaData.valor;
+      } else {
+        novoSaldo = banco.saldo + baixaData.valor;
       }
+      
+      const { error: bancoError } = await supabase
+        .from('bancos')
+        .update({ saldo: novoSaldo })
+        .eq('id', baixaData.banco_id);
+
+      if (bancoError) {
+        toast({
+          title: "Erro",
+          description: "Erro ao atualizar saldo do banco",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Update local bancos state
+      setBancos(prev => prev.map(b => 
+        b.id === baixaData.banco_id ? { ...b, saldo: novoSaldo } : b
+      ));
     }
 
     toast({
@@ -387,16 +409,26 @@ const ContasPagarReceber = () => {
 
     // Revert all bank balance changes
     for (const baixa of baixasDaConta) {
-      const valorReverso = conta.destino_tipo === 'fornecedor' ? baixa.valor : -baixa.valor;
-      
       const banco = bancos.find(b => b.id === baixa.banco_id);
       if (banco) {
-        const novoSaldo = banco.saldo + valorReverso;
+        let novoSaldo: number;
+        
+        // Reverter a operação: se foi diminuído, agora soma; se foi somado, agora diminui
+        if (conta.destino_tipo === 'fornecedor') {
+          novoSaldo = banco.saldo + baixa.valor; // Reverter diminuição
+        } else {
+          novoSaldo = banco.saldo - baixa.valor; // Reverter soma
+        }
         
         await supabase
           .from('bancos')
           .update({ saldo: novoSaldo })
           .eq('id', baixa.banco_id);
+
+        // Update local bancos state
+        setBancos(prev => prev.map(b => 
+          b.id === baixa.banco_id ? { ...b, saldo: novoSaldo } : b
+        ));
       }
     }
 
