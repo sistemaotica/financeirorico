@@ -64,12 +64,15 @@ const DesfazerMovimentacaoDialog = ({
 
   if (!conta) return null;
 
-  const isCliente = conta.destino_tipo === 'cliente';
-  const nomeDestino = isCliente ? conta.clientes?.nome : conta.fornecedores?.nome;
-  const tipoOperacao = isCliente ? 'retirado' : 'adicionado';
-  const descricaoOperacao = isCliente 
-    ? 'O valor será DIMINUÍDO do saldo do banco selecionado'
-    : 'O valor será ADICIONADO ao saldo do banco selecionado';
+  const isFornecedor = conta.destino_tipo === 'fornecedor';
+  const nomeDestino = isFornecedor ? conta.fornecedores?.nome : conta.clientes?.nome;
+  const perguntaTitulo = isFornecedor 
+    ? 'Para qual banco o valor total registrado no histórico de baixas será creditado?'
+    : 'De qual banco será retirado o valor total registrado no histórico de baixas?';
+  
+  const descricaoOperacao = isFornecedor 
+    ? 'O valor será ADICIONADO como CRÉDITO ao banco selecionado'
+    : 'O valor será SUBTRAÍDO como DÉBITO do banco selecionado';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -85,15 +88,18 @@ const DesfazerMovimentacaoDialog = ({
               <strong>Referência:</strong> {conta.referencia}
             </p>
             <p className="text-sm text-gray-600">
-              <strong>{isCliente ? 'Cliente' : 'Fornecedor'}:</strong> {nomeDestino}
+              <strong>{isFornecedor ? 'Fornecedor' : 'Cliente'}:</strong> {nomeDestino}
             </p>
             <p className="text-sm text-gray-600">
               <strong>Valor Total das Baixas:</strong> R$ {valorTotalBaixas.toFixed(2)}
             </p>
           </div>
 
-          <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
-            <p className="text-sm text-yellow-800">
+          <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg">
+            <p className="text-sm text-blue-800 font-medium mb-2">
+              {perguntaTitulo}
+            </p>
+            <p className="text-xs text-blue-700">
               <strong>Atenção:</strong> {descricaoOperacao}
             </p>
           </div>
@@ -122,9 +128,9 @@ const DesfazerMovimentacaoDialog = ({
           <Button 
             onClick={handleConfirm} 
             disabled={!bancoSelecionado}
-            variant={isCliente ? "destructive" : "default"}
+            variant={isFornecedor ? "default" : "destructive"}
           >
-            Confirmar e {tipoOperacao === 'retirado' ? 'Retirar' : 'Adicionar'} R$ {valorTotalBaixas.toFixed(2)}
+            Confirmar e {isFornecedor ? 'Creditar' : 'Debitar'} R$ {valorTotalBaixas.toFixed(2)}
           </Button>
         </DialogFooter>
       </DialogContent>

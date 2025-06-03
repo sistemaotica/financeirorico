@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -432,13 +431,13 @@ const ContasPagarReceber = () => {
     const baixasDaConta = baixasContas.filter(baixa => baixa.conta_id === contaParaDesfazer.id);
     const valorTotalBaixas = baixasDaConta.reduce((total, baixa) => total + baixa.valor, 0);
 
-    // Atualizar saldo do banco selecionado
+    // Atualizar saldo do banco selecionado conforme o tipo de conta
     const banco = bancos.find(b => b.id === bancoId);
     if (banco) {
       let novoSaldo: number;
       
-      // Para fornecedores: somar ao saldo (creditar)
-      // Para clientes: subtrair do saldo
+      // Para fornecedores: CREDITAR (somar ao saldo)
+      // Para clientes: DEBITAR (subtrair do saldo)
       if (contaParaDesfazer.destino_tipo === 'fornecedor') {
         novoSaldo = banco.saldo + valorTotalBaixas;
       } else {
@@ -503,7 +502,7 @@ const ContasPagarReceber = () => {
 
     toast({
       title: "Sucesso",
-      description: `Movimentação desfeita. R$ ${valorTotalBaixas.toFixed(2)} ${tipoOperacao} no ${bancoNome}`
+      description: `Movimentação desfeita. R$ ${valorTotalBaixas.toFixed(2)} ${tipoOperacao} no ${bancoNome}. A conta retornou ao estado "Em Aberto".`
     });
     
     carregarContas();
