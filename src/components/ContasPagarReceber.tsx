@@ -26,6 +26,7 @@ interface Banco {
   nome: string;
   agencia: string;
   conta: string;
+  saldo: number;
 }
 
 interface Conta {
@@ -101,7 +102,7 @@ const ContasPagarReceber = () => {
   const carregarBancos = async () => {
     const { data, error } = await supabase
       .from('bancos')
-      .select('id, nome, agencia, conta')
+      .select('id, nome, agencia, conta, saldo')
       .eq('ativo', true)
       .order('nome');
 
