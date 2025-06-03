@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -54,6 +55,7 @@ interface BaixaConta {
   valor: number;
   data_baixa: string;
   created_at: string;
+  banco_id: string;
 }
 
 const ContasPagarReceber = () => {
@@ -325,25 +327,114 @@ const ContasPagarReceber = () => {
   };
 
   const handleSaveBaixa = async (baixaData: { conta_id: string; banco_id: string; valor: number; data_baixa: string }) => {
-    const { error } = await supabase
+    const conta = contas.find(c => c.id === baixaData.conta_id);
+    
+    // Insert the baixa record
+    const { error: baixaError } = await supabase
       .from('baixas_contas')
       .insert(baixaData);
 
-    if (error) {
+    if (baixaError) {
       toast({
         title: "Erro",
         description: "Erro ao realizar baixa",
         variant: "destructive"
       });
-    } else {
-      toast({
-        title: "Sucesso",
-        description: "Baixa realizada com sucesso"
-      });
-      setBaixaDialogOpen(false);
-      carregarContas();
-      carregarBaixasContas();
+      return;
     }
+
+    // Update bank balance based on account type
+    if (conta) {
+      const valorAjuste = conta.destino_tipo === 'fornecedor' ? -baixaData.valor : baixaData.valor;
+      
+      const { error: bancoError } = await supabase
+        .from('bancos')
+        .update({ 
+          saldo: supabase.raw(`saldo + ${valorAjuste}`)
+        })
+        .eq('id', baixaData.banco_id);
+
+      if (bancoError) {
+        toast({
+          title: "Erro",
+          description: "Erro ao atualizar saldo do banco",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
+    toast({
+      title: "Sucesso",
+      description: "Baixa realizada com sucesso"
+    });
+    setBaixaDialogOpen(false);
+    carregarContas();
+    carregarBaixasContas();
+  };
+
+  const handleDesfazerMovimentacao = async (contaId: string) => {
+    if (!confirm('Tem certeza que deseja desfazer toda a movimentação desta conta? Isso reverterá todas as baixas.')) {
+      return;
+    }
+
+    const baixasDaConta = baixasContas.filter(baixa => baixa.conta_id === contaId);
+    const conta = contas.find(c => c.id === contaId);
+
+    if (!conta) return;
+
+    // Revert all bank balance changes
+    for (const baixa of baixasDaConta) {
+      const valorReverso = conta.destino_tipo === 'fornecedor' ? baixa.valor : -baixa.valor;
+      
+      await supabase
+        .from('bancos')
+        .update({ 
+          saldo: supabase.raw(`saldo + ${valorReverso}`)
+        })
+        .eq('id', baixa.banco_id);
+    }
+
+    // Delete all baixas for this conta
+    const { error: deleteBaixasError } = await supabase
+      .from('baixas_contas')
+      .delete()
+      .eq('conta_id', contaId);
+
+    if (deleteBaixasError) {
+      toast({
+        title: "Erro",
+        description: "Erro ao desfazer baixas",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Reset conta values
+    const { error: updateContaError } = await supabase
+      .from('contas')
+      .update({
+        valor_baixa: 0,
+        status: 'aberto'
+      })
+      .eq('id', contaId);
+
+    if (updateContaError) {
+      toast({
+        title: "Erro",
+        description: "Erro ao resetar conta",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    toast({
+      title: "Sucesso",
+      description: "Movimentação desfeita com sucesso"
+    });
+    
+    carregarContas();
+    carregarBaixasContas();
   };
 
   const contasFiltradas = contas.filter(conta => {
@@ -556,17 +647,22 @@ const ContasPagarReceber = () => {
                           </span>
                         </TableCell>
                         <TableCell>
-                          <div className="flex space-x-1">
+                          <div className="flex flex-wrap space-x-1 space-y-1">
                             <Button size="sm" variant="outline" onClick={() => handleEdit(conta)}>Editar</Button>
                             <Button size="sm" variant="destructive" onClick={() => handleDelete(conta.id)}>Excluir</Button>
                             {conta.valor_baixa < conta.valor && (
                               <Button size="sm" variant="default" onClick={() => handleBaixa(conta)}>Baixa</Button>
                             )}
+                            {conta.valor_baixa > 0 && (
+                              <Button size="sm" variant="secondary" onClick={() => handleDesfazerMovimentacao(conta.id)}>
+                                Desfazer
+                              </Button>
+                            )}
                           </div>
                           {getBaixasHistorico(conta.id).length > 0 && (
                             <div className="mt-2 text-xs text-gray-600">
                               <strong>Histórico de Baixas:</strong>
-                              {getBaixasHistorico(conta.id).map((baixa, index) => (
+                              {getBaixasHistorico(conta.id).map((baixa) => (
                                 <div key={baixa.id}>
                                   {new Date(baixa.data_baixa).toLocaleDateString('pt-BR')}: R$ {baixa.valor.toFixed(2)}
                                 </div>
@@ -615,17 +711,22 @@ const ContasPagarReceber = () => {
                           </span>
                         </TableCell>
                         <TableCell>
-                          <div className="flex space-x-1">
+                          <div className="flex flex-wrap space-x-1 space-y-1">
                             <Button size="sm" variant="outline" onClick={() => handleEdit(conta)}>Editar</Button>
                             <Button size="sm" variant="destructive" onClick={() => handleDelete(conta.id)}>Excluir</Button>
                             {conta.valor_baixa < conta.valor && (
                               <Button size="sm" variant="default" onClick={() => handleBaixa(conta)}>Baixa</Button>
                             )}
+                            {conta.valor_baixa > 0 && (
+                              <Button size="sm" variant="secondary" onClick={() => handleDesfazerMovimentacao(conta.id)}>
+                                Desfazer
+                              </Button>
+                            )}
                           </div>
                           {getBaixasHistorico(conta.id).length > 0 && (
                             <div className="mt-2 text-xs text-gray-600">
                               <strong>Histórico de Baixas:</strong>
-                              {getBaixasHistorico(conta.id).map((baixa, index) => (
+                              {getBaixasHistorico(conta.id).map((baixa) => (
                                 <div key={baixa.id}>
                                   {new Date(baixa.data_baixa).toLocaleDateString('pt-BR')}: R$ {baixa.valor.toFixed(2)}
                                 </div>

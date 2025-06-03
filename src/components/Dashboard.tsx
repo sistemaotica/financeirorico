@@ -14,13 +14,30 @@ interface Banco {
   saldo: number;
 }
 
+interface Conta {
+  id: string;
+  tipo: 'pagar' | 'receber';
+  destino_tipo: 'cliente' | 'fornecedor';
+  referencia: string;
+  data_vencimento: string;
+  valor: number;
+  valor_baixa: number;
+  clientes?: { nome: string };
+  fornecedores?: { nome: string };
+}
+
 const Dashboard = () => {
   const [bancos, setBancos] = useState<Banco[]>([]);
   const [bancoSelecionado, setBancoSelecionado] = useState<string>('');
   const [saldoBanco, setSaldoBanco] = useState<number>(0);
+  const [proximosVencimentos, setProximosVencimentos] = useState<Conta[]>([]);
+  const [proximosRecebimentos, setProximosRecebimentos] = useState<Conta[]>([]);
+  const [debitosSemana, setDebitosSemana] = useState<number>(0);
+  const [receberSemana, setReceberSemana] = useState<number>(0);
 
   useEffect(() => {
     carregarBancos();
+    carregarContasSemana();
   }, []);
 
   useEffect(() => {
@@ -45,15 +62,57 @@ const Dashboard = () => {
     }
   };
 
-  // Dados simulados para outras métricas
-  const debitosSemana = 3250.00;
-  const receberSemana = 8750.00;
+  const carregarContasSemana = async () => {
+    const hoje = new Date();
+    const inicioSemana = new Date(hoje);
+    inicioSemana.setDate(hoje.getDate() - hoje.getDay());
+    const fimSemana = new Date(inicioSemana);
+    fimSemana.setDate(inicioSemana.getDate() + 6);
+
+    const { data: contas, error } = await supabase
+      .from('contas')
+      .select(`
+        *,
+        clientes (nome),
+        fornecedores (nome)
+      `)
+      .gte('data_vencimento', inicioSemana.toISOString().split('T')[0])
+      .lte('data_vencimento', fimSemana.toISOString().split('T')[0])
+      .lt('valor_baixa', supabase.raw('valor'))
+      .order('data_vencimento');
+
+    if (!error && contas) {
+      const contasPagar = contas.filter(conta => conta.tipo === 'pagar');
+      const contasReceber = contas.filter(conta => conta.tipo === 'receber');
+      
+      setProximosVencimentos(contasPagar.slice(0, 3));
+      setProximosRecebimentos(contasReceber.slice(0, 3));
+      
+      const totalDebitos = contasPagar.reduce((sum, conta) => sum + (conta.valor - (conta.valor_baixa || 0)), 0);
+      const totalReceber = contasReceber.reduce((sum, conta) => sum + (conta.valor - (conta.valor_baixa || 0)), 0);
+      
+      setDebitosSemana(totalDebitos);
+      setReceberSemana(totalReceber);
+    }
+  };
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL',
     }).format(value);
+  };
+
+  const getDiasParaVencimento = (dataVencimento: string) => {
+    const hoje = new Date();
+    const vencimento = new Date(dataVencimento);
+    const diffTime = vencimento.getTime() - hoje.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Vence hoje';
+    if (diffDays === 1) return 'Vence amanhã';
+    if (diffDays > 0) return `Vence em ${diffDays} dias`;
+    return `Venceu há ${Math.abs(diffDays)} dias`;
   };
 
   const bancoAtual = bancos.find(b => b.id === bancoSelecionado);
@@ -123,7 +182,7 @@ const Dashboard = () => {
               {formatCurrency(debitosSemana)}
             </div>
             <p className="text-xs text-red-600 mt-1">
-              5 contas a pagar
+              {proximosVencimentos.length} contas a pagar
             </p>
           </CardContent>
         </Card>
@@ -143,7 +202,7 @@ const Dashboard = () => {
               {formatCurrency(receberSemana)}
             </div>
             <p className="text-xs text-green-600 mt-1">
-              8 recebimentos previstos
+              {proximosRecebimentos.length} recebimentos previstos
             </p>
           </CardContent>
         </Card>
@@ -160,27 +219,24 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-gray-800">Aluguel</p>
-                  <p className="text-sm text-gray-600">Vence em 2 dias</p>
-                </div>
-                <span className="text-red-600 font-semibold">R$ 1.200,00</span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-gray-800">Fornecedor ABC</p>
-                  <p className="text-sm text-gray-600">Vence em 4 dias</p>
-                </div>
-                <span className="text-red-600 font-semibold">R$ 850,00</span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-gray-800">Energia Elétrica</p>
-                  <p className="text-sm text-gray-600">Vence em 6 dias</p>
-                </div>
-                <span className="text-red-600 font-semibold">R$ 350,00</span>
-              </div>
+              {proximosVencimentos.length > 0 ? (
+                proximosVencimentos.map((conta) => (
+                  <div key={conta.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="font-medium text-gray-800">{conta.referencia}</p>
+                      <p className="text-sm text-gray-600">
+                        {conta.destino_tipo === 'fornecedor' ? conta.fornecedores?.nome : 'Despesa'}
+                      </p>
+                      <p className="text-xs text-gray-500">{getDiasParaVencimento(conta.data_vencimento)}</p>
+                    </div>
+                    <span className="text-red-600 font-semibold">
+                      {formatCurrency(conta.valor - (conta.valor_baixa || 0))}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-center py-4">Nenhum vencimento na semana</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -194,27 +250,24 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-gray-800">Cliente XYZ Ltda</p>
-                  <p className="text-sm text-gray-600">Previsto para hoje</p>
-                </div>
-                <span className="text-green-600 font-semibold">R$ 2.500,00</span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-gray-800">Vendas Online</p>
-                  <p className="text-sm text-gray-600">Previsto para amanhã</p>
-                </div>
-                <span className="text-green-600 font-semibold">R$ 1.750,00</span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-gray-800">Cliente ABC Corp</p>
-                  <p className="text-sm text-gray-600">Previsto em 3 dias</p>
-                </div>
-                <span className="text-green-600 font-semibold">R$ 3.200,00</span>
-              </div>
+              {proximosRecebimentos.length > 0 ? (
+                proximosRecebimentos.map((conta) => (
+                  <div key={conta.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="font-medium text-gray-800">{conta.referencia}</p>
+                      <p className="text-sm text-gray-600">
+                        {conta.destino_tipo === 'cliente' ? conta.clientes?.nome : 'Receita'}
+                      </p>
+                      <p className="text-xs text-gray-500">{getDiasParaVencimento(conta.data_vencimento)}</p>
+                    </div>
+                    <span className="text-green-600 font-semibold">
+                      {formatCurrency(conta.valor - (conta.valor_baixa || 0))}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-center py-4">Nenhum recebimento na semana</p>
+              )}
             </div>
           </CardContent>
         </Card>
