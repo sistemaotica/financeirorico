@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -165,11 +166,15 @@ const ContasPagarReceber = () => {
   const gerarParcelas = (valorTotal: number, numParcelas: number, dataVencimento: string) => {
     const parcelas = [];
     const valorParcela = valorTotal / numParcelas;
-    const dataBase = new Date(dataVencimento);
+    const dataBase = new Date(dataVencimento + 'T00:00:00'); // Garantir que seja tratada como data local
 
     for (let i = 0; i < numParcelas; i++) {
       const dataVenc = new Date(dataBase);
-      dataVenc.setMonth(dataBase.getMonth() + i);
+      // Para a primeira parcela, usar exatamente a data informada
+      // Para as demais, adicionar meses mantendo o mesmo dia
+      if (i > 0) {
+        dataVenc.setMonth(dataBase.getMonth() + i);
+      }
       
       parcelas.push({
         valor: valorParcela,
@@ -413,11 +418,12 @@ const ContasPagarReceber = () => {
       if (banco) {
         let novoSaldo: number;
         
-        // Reverter a operação: se foi diminuído, agora soma; se foi somado, agora diminui
-        if (conta.destino_tipo === 'fornecedor') {
-          novoSaldo = banco.saldo + baixa.valor; // Reverter diminuição
-        } else {
+        // Para clientes (receber): quando desfaz, diminui do saldo (reverter a soma que foi feita)
+        // Para fornecedores (pagar): quando desfaz, soma ao saldo (reverter a diminuição que foi feita)
+        if (conta.destino_tipo === 'cliente') {
           novoSaldo = banco.saldo - baixa.valor; // Reverter soma
+        } else {
+          novoSaldo = banco.saldo + baixa.valor; // Reverter diminuição
         }
         
         await supabase
