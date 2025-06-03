@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import Login from '@/components/Login';
 import Layout from '@/components/Layout';
 import Dashboard from '@/components/Dashboard';
+import Lancamentos from '@/components/Lancamentos';
+import ContasPagarReceber from '@/components/ContasPagarReceber';
 
 const Index = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -28,19 +30,9 @@ const Index = () => {
       case 'dashboard':
         return <Dashboard />;
       case 'lancamento':
-        return (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-2xl font-bold mb-4">Lançamento</h2>
-            <p className="text-gray-600">Funcionalidade de lançamento será implementada aqui.</p>
-          </div>
-        );
+        return <Lancamentos />;
       case 'contas':
-        return (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-2xl font-bold mb-4">Contas a Pagar/Receber</h2>
-            <p className="text-gray-600">Funcionalidade de contas será implementada aqui.</p>
-          </div>
-        );
+        return <ContasPagarReceber />;
       case 'relatorio-contas':
         return (
           <div className="bg-white rounded-lg shadow p-6">

@@ -9,7 +9,224 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      bancos: {
+        Row: {
+          agencia: string | null
+          ativo: boolean | null
+          conta: string | null
+          created_at: string
+          id: string
+          nome: string
+          saldo: number | null
+          updated_at: string
+        }
+        Insert: {
+          agencia?: string | null
+          ativo?: boolean | null
+          conta?: string | null
+          created_at?: string
+          id?: string
+          nome: string
+          saldo?: number | null
+          updated_at?: string
+        }
+        Update: {
+          agencia?: string | null
+          ativo?: boolean | null
+          conta?: string | null
+          created_at?: string
+          id?: string
+          nome?: string
+          saldo?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      clientes: {
+        Row: {
+          ativo: boolean | null
+          cpf_cnpj: string | null
+          created_at: string
+          email: string | null
+          endereco: string | null
+          id: string
+          nome: string
+          telefone: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          cpf_cnpj?: string | null
+          created_at?: string
+          email?: string | null
+          endereco?: string | null
+          id?: string
+          nome: string
+          telefone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean | null
+          cpf_cnpj?: string | null
+          created_at?: string
+          email?: string | null
+          endereco?: string | null
+          id?: string
+          nome?: string
+          telefone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      contas: {
+        Row: {
+          cliente_id: string | null
+          created_at: string
+          data_pagamento: string | null
+          data_vencimento: string
+          destino_tipo: string
+          fornecedor_id: string | null
+          id: string
+          numero_nota: string | null
+          parcela_numero: number | null
+          parcela_total: number | null
+          referencia: string
+          status: string | null
+          tipo: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          cliente_id?: string | null
+          created_at?: string
+          data_pagamento?: string | null
+          data_vencimento: string
+          destino_tipo: string
+          fornecedor_id?: string | null
+          id?: string
+          numero_nota?: string | null
+          parcela_numero?: number | null
+          parcela_total?: number | null
+          referencia: string
+          status?: string | null
+          tipo: string
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          cliente_id?: string | null
+          created_at?: string
+          data_pagamento?: string | null
+          data_vencimento?: string
+          destino_tipo?: string
+          fornecedor_id?: string | null
+          id?: string
+          numero_nota?: string | null
+          parcela_numero?: number | null
+          parcela_total?: number | null
+          referencia?: string
+          status?: string | null
+          tipo?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contas_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contas_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fornecedores: {
+        Row: {
+          ativo: boolean | null
+          cpf_cnpj: string | null
+          created_at: string
+          email: string | null
+          endereco: string | null
+          id: string
+          nome: string
+          telefone: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          cpf_cnpj?: string | null
+          created_at?: string
+          email?: string | null
+          endereco?: string | null
+          id?: string
+          nome: string
+          telefone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean | null
+          cpf_cnpj?: string | null
+          created_at?: string
+          email?: string | null
+          endereco?: string | null
+          id?: string
+          nome?: string
+          telefone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      lancamentos: {
+        Row: {
+          banco_id: string
+          created_at: string
+          data: string
+          descricao: string
+          id: string
+          numero_nota_fiscal: string | null
+          tipo: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          banco_id: string
+          created_at?: string
+          data: string
+          descricao: string
+          id?: string
+          numero_nota_fiscal?: string | null
+          tipo: string
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          banco_id?: string
+          created_at?: string
+          data?: string
+          descricao?: string
+          id?: string
+          numero_nota_fiscal?: string | null
+          tipo?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lancamentos_banco_id_fkey"
+            columns: ["banco_id"]
+            isOneToOne: false
+            referencedRelation: "bancos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
