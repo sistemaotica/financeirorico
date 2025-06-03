@@ -83,7 +83,12 @@ const Lancamentos = () => {
         variant: "destructive"
       });
     } else {
-      setLancamentos(data || []);
+      // Cast the tipo field to the correct type
+      const typedData = (data || []).map(item => ({
+        ...item,
+        tipo: item.tipo as 'credito' | 'debito'
+      }));
+      setLancamentos(typedData);
     }
   };
 

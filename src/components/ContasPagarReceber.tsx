@@ -103,7 +103,14 @@ const ContasPagarReceber = () => {
         variant: "destructive"
       });
     } else {
-      setContas(data || []);
+      // Cast the tipo, destino_tipo and status fields to the correct types
+      const typedData = (data || []).map(item => ({
+        ...item,
+        tipo: item.tipo as 'pagar' | 'receber',
+        destino_tipo: item.destino_tipo as 'cliente' | 'fornecedor',
+        status: item.status as 'aberto' | 'pago' | 'vencido'
+      }));
+      setContas(typedData);
     }
   };
 
