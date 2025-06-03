@@ -29,14 +29,14 @@ const Dashboard = () => {
   const [bancos, setBancos] = useState<Banco[]>([]);
   const [bancoSelecionado, setBancoSelecionado] = useState<string>('');
   const [saldoBanco, setSaldoBanco] = useState<number>(0);
-  const [proximosVencimentos, setProximosVencimentos] = useState<Conta[]>([]);
-  const [proximosRecebimentos, setProximosRecebimentos] = useState<Conta[]>([]);
-  const [debitosSemana, setDebitosSemana] = useState<number>(0);
-  const [receberSemana, setReceberSemana] = useState<number>(0);
+  const [contasAtrasadasPagar, setContasAtrasadasPagar] = useState<Conta[]>([]);
+  const [contasAtrasadasReceber, setContasAtrasadasReceber] = useState<Conta[]>([]);
+  const [totalAtrasadoPagar, setTotalAtrasadoPagar] = useState<number>(0);
+  const [totalAtrasadoReceber, setTotalAtrasadoReceber] = useState<number>(0);
 
   useEffect(() => {
     carregarBancos();
-    carregarContasSemana();
+    carregarContasAtrasadas();
   }, []);
 
   useEffect(() => {
@@ -61,12 +61,10 @@ const Dashboard = () => {
     }
   };
 
-  const carregarContasSemana = async () => {
+  const carregarContasAtrasadas = async () => {
     const hoje = new Date();
-    const inicioSemana = new Date(hoje);
-    inicioSemana.setDate(hoje.getDate() - hoje.getDay());
-    const fimSemana = new Date(inicioSemana);
-    fimSemana.setDate(inicioSemana.getDate() + 6);
+    hoje.setHours(0, 0, 0, 0);
+    const dataHoje = hoje.toISOString().split('T')[0];
 
     const { data: contas, error } = await supabase
       .from('contas')
@@ -75,8 +73,7 @@ const Dashboard = () => {
         clientes (nome),
         fornecedores (nome)
       `)
-      .gte('data_vencimento', inicioSemana.toISOString().split('T')[0])
-      .lte('data_vencimento', fimSemana.toISOString().split('T')[0])
+      .lt('data_vencimento', dataHoje)
       .lt('valor_baixa', 'valor')
       .order('data_vencimento');
 
@@ -88,17 +85,24 @@ const Dashboard = () => {
         destino_tipo: conta.destino_tipo as 'cliente' | 'fornecedor'
       }));
 
-      const contasPagar = contasTyped.filter(conta => conta.tipo === 'pagar');
-      const contasReceber = contasTyped.filter(conta => conta.tipo === 'receber');
+      // Filtrar contas de fornecedores (pagar) atrasadas
+      const contasPagarAtrasadas = contasTyped.filter(conta => 
+        conta.destino_tipo === 'fornecedor' && conta.tipo === 'pagar'
+      );
       
-      setProximosVencimentos(contasPagar.slice(0, 3));
-      setProximosRecebimentos(contasReceber.slice(0, 3));
+      // Filtrar contas de clientes (receber) atrasadas
+      const contasReceberAtrasadas = contasTyped.filter(conta => 
+        conta.destino_tipo === 'cliente' && conta.tipo === 'receber'
+      );
       
-      const totalDebitos = contasPagar.reduce((sum, conta) => sum + (conta.valor - (conta.valor_baixa || 0)), 0);
-      const totalReceber = contasReceber.reduce((sum, conta) => sum + (conta.valor - (conta.valor_baixa || 0)), 0);
+      setContasAtrasadasPagar(contasPagarAtrasadas.slice(0, 3));
+      setContasAtrasadasReceber(contasReceberAtrasadas.slice(0, 3));
       
-      setDebitosSemana(totalDebitos);
-      setReceberSemana(totalReceber);
+      const totalPagar = contasPagarAtrasadas.reduce((sum, conta) => sum + (conta.valor - (conta.valor_baixa || 0)), 0);
+      const totalReceber = contasReceberAtrasadas.reduce((sum, conta) => sum + (conta.valor - (conta.valor_baixa || 0)), 0);
+      
+      setTotalAtrasadoPagar(totalPagar);
+      setTotalAtrasadoReceber(totalReceber);
     }
   };
 
@@ -173,11 +177,11 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Débitos da Semana */}
+        {/* Contas a Pagar Atrasadas */}
         <Card className="bg-gradient-to-br from-red-50 to-pink-50 border-red-200 hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-red-700">
-              Débitos da Semana
+              Contas a Pagar Atrasadas
             </CardTitle>
             <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
               <TrendingDown className="w-4 h-4 text-red-600" />
@@ -185,30 +189,30 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-900">
-              {formatCurrency(debitosSemana)}
+              {formatCurrency(totalAtrasadoPagar)}
             </div>
             <p className="text-xs text-red-600 mt-1">
-              {proximosVencimentos.length} contas a pagar
+              {contasAtrasadasPagar.length} contas atrasadas
             </p>
           </CardContent>
         </Card>
 
-        {/* A Receber da Semana */}
-        <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 hover:shadow-lg transition-shadow">
+        {/* Contas a Receber Atrasadas */}
+        <Card className="bg-gradient-to-br from-orange-50 to-yellow-50 border-orange-200 hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-green-700">
-              A Receber da Semana
+            <CardTitle className="text-sm font-medium text-orange-700">
+              Contas a Receber Atrasadas
             </CardTitle>
-            <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-              <TrendingUp className="w-4 h-4 text-green-600" />
+            <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 text-orange-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-900">
-              {formatCurrency(receberSemana)}
+            <div className="text-2xl font-bold text-orange-900">
+              {formatCurrency(totalAtrasadoReceber)}
             </div>
-            <p className="text-xs text-green-600 mt-1">
-              {proximosRecebimentos.length} recebimentos previstos
+            <p className="text-xs text-orange-600 mt-1">
+              {contasAtrasadasReceber.length} recebimentos atrasados
             </p>
           </CardContent>
         </Card>
@@ -220,28 +224,36 @@ const Dashboard = () => {
           <CardHeader>
             <CardTitle className="text-lg font-semibold text-gray-800 flex items-center gap-2">
               <ArrowDown className="w-5 h-5 text-red-500" />
-              Próximos Vencimentos
+              Contas a Pagar Atrasadas
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {proximosVencimentos.length > 0 ? (
-                proximosVencimentos.map((conta) => (
-                  <div key={conta.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-gray-800">{conta.referencia}</p>
-                      <p className="text-sm text-gray-600">
-                        {conta.destino_tipo === 'fornecedor' ? conta.fornecedores?.nome : 'Despesa'}
-                      </p>
-                      <p className="text-xs text-gray-500">{getDiasParaVencimento(conta.data_vencimento)}</p>
-                    </div>
-                    <span className="text-red-600 font-semibold">
-                      {formatCurrency(conta.valor - (conta.valor_baixa || 0))}
+              {contasAtrasadasPagar.length > 0 ? (
+                <>
+                  <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg border-l-4 border-red-500">
+                    <span className="font-semibold text-red-700">Total Atrasado:</span>
+                    <span className="text-red-700 font-bold text-lg">
+                      {formatCurrency(totalAtrasadoPagar)}
                     </span>
                   </div>
-                ))
+                  {contasAtrasadasPagar.map((conta) => (
+                    <div key={conta.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="font-medium text-gray-800">{conta.referencia}</p>
+                        <p className="text-sm text-gray-600">
+                          {conta.destino_tipo === 'fornecedor' ? conta.fornecedores?.nome : 'Despesa'}
+                        </p>
+                        <p className="text-xs text-red-500 font-medium">{getDiasParaVencimento(conta.data_vencimento)}</p>
+                      </div>
+                      <span className="text-red-600 font-semibold">
+                        {formatCurrency(conta.valor - (conta.valor_baixa || 0))}
+                      </span>
+                    </div>
+                  ))}
+                </>
               ) : (
-                <p className="text-gray-500 text-center py-4">Nenhum vencimento na semana</p>
+                <p className="text-gray-500 text-center py-4">Nenhuma conta a pagar atrasada</p>
               )}
             </div>
           </CardContent>
@@ -250,29 +262,37 @@ const Dashboard = () => {
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-              <ArrowUp className="w-5 h-5 text-green-500" />
-              Próximos Recebimentos
+              <ArrowUp className="w-5 h-5 text-orange-500" />
+              Contas a Receber Atrasadas
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {proximosRecebimentos.length > 0 ? (
-                proximosRecebimentos.map((conta) => (
-                  <div key={conta.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-gray-800">{conta.referencia}</p>
-                      <p className="text-sm text-gray-600">
-                        {conta.destino_tipo === 'cliente' ? conta.clientes?.nome : 'Receita'}
-                      </p>
-                      <p className="text-xs text-gray-500">{getDiasParaVencimento(conta.data_vencimento)}</p>
-                    </div>
-                    <span className="text-green-600 font-semibold">
-                      {formatCurrency(conta.valor - (conta.valor_baixa || 0))}
+              {contasAtrasadasReceber.length > 0 ? (
+                <>
+                  <div className="flex justify-between items-center p-3 bg-orange-50 rounded-lg border-l-4 border-orange-500">
+                    <span className="font-semibold text-orange-700">Total Atrasado:</span>
+                    <span className="text-orange-700 font-bold text-lg">
+                      {formatCurrency(totalAtrasadoReceber)}
                     </span>
                   </div>
-                ))
+                  {contasAtrasadasReceber.map((conta) => (
+                    <div key={conta.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="font-medium text-gray-800">{conta.referencia}</p>
+                        <p className="text-sm text-gray-600">
+                          {conta.destino_tipo === 'cliente' ? conta.clientes?.nome : 'Receita'}
+                        </p>
+                        <p className="text-xs text-orange-500 font-medium">{getDiasParaVencimento(conta.data_vencimento)}</p>
+                      </div>
+                      <span className="text-orange-600 font-semibold">
+                        {formatCurrency(conta.valor - (conta.valor_baixa || 0))}
+                      </span>
+                    </div>
+                  ))}
+                </>
               ) : (
-                <p className="text-gray-500 text-center py-4">Nenhum recebimento na semana</p>
+                <p className="text-gray-500 text-center py-4">Nenhuma conta a receber atrasada</p>
               )}
             </div>
           </CardContent>

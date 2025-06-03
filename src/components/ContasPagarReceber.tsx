@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -166,19 +167,30 @@ const ContasPagarReceber = () => {
   const gerarParcelas = (valorTotal: number, numParcelas: number, dataVencimento: string) => {
     const parcelas = [];
     const valorParcela = valorTotal / numParcelas;
-    const dataBase = new Date(dataVencimento + 'T00:00:00'); // Garantir que seja tratada como data local
+    
+    // Usar a data exatamente como informada pelo usuário
+    const [ano, mes, dia] = dataVencimento.split('-').map(Number);
+    const dataBase = new Date(ano, mes - 1, dia); // mes - 1 porque Date usa 0-11 para meses
 
     for (let i = 0; i < numParcelas; i++) {
-      const dataVenc = new Date(dataBase);
-      // Para a primeira parcela, usar exatamente a data informada
-      // Para as demais, adicionar meses mantendo o mesmo dia
-      if (i > 0) {
-        dataVenc.setMonth(dataBase.getMonth() + i);
+      let dataVenc: Date;
+      
+      if (i === 0) {
+        // Primeira parcela: usar exatamente a data informada
+        dataVenc = new Date(dataBase);
+      } else {
+        // Demais parcelas: adicionar meses
+        dataVenc = new Date(ano, mes - 1 + i, dia);
       }
+      
+      // Converter para string no formato YYYY-MM-DD
+      const dataVencString = dataVenc.getFullYear() + '-' + 
+        String(dataVenc.getMonth() + 1).padStart(2, '0') + '-' + 
+        String(dataVenc.getDate()).padStart(2, '0');
       
       parcelas.push({
         valor: valorParcela,
-        data_vencimento: dataVenc.toISOString().split('T')[0],
+        data_vencimento: dataVencString,
         parcela_numero: i + 1,
         parcela_total: numParcelas
       });
@@ -412,18 +424,21 @@ const ContasPagarReceber = () => {
 
     if (!conta) return;
 
+    // Calcular valor total das baixas
+    const valorTotalBaixas = baixasDaConta.reduce((total, baixa) => total + baixa.valor, 0);
+
     // Revert all bank balance changes
     for (const baixa of baixasDaConta) {
       const banco = bancos.find(b => b.id === baixa.banco_id);
       if (banco) {
         let novoSaldo: number;
         
-        // Para clientes (receber): quando desfaz, diminui do saldo (reverter a soma que foi feita)
-        // Para fornecedores (pagar): quando desfaz, soma ao saldo (reverter a diminuição que foi feita)
-        if (conta.destino_tipo === 'cliente') {
-          novoSaldo = banco.saldo - baixa.valor; // Reverter soma
+        // Para fornecedores (pagar): quando desfaz, soma ao saldo (credita de forma positiva)
+        // Para clientes (receber): quando desfaz, diminui do saldo (subtrai)
+        if (conta.destino_tipo === 'fornecedor') {
+          novoSaldo = banco.saldo + baixa.valor; // Creditar de forma positiva
         } else {
-          novoSaldo = banco.saldo + baixa.valor; // Reverter diminuição
+          novoSaldo = banco.saldo - baixa.valor; // Subtrair do saldo
         }
         
         await supabase
