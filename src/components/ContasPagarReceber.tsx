@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -347,20 +346,23 @@ const ContasPagarReceber = () => {
     if (conta) {
       const valorAjuste = conta.destino_tipo === 'fornecedor' ? -baixaData.valor : baixaData.valor;
       
-      const { error: bancoError } = await supabase
-        .from('bancos')
-        .update({ 
-          saldo: supabase.raw(`saldo + ${valorAjuste}`)
-        })
-        .eq('id', baixaData.banco_id);
+      const banco = bancos.find(b => b.id === baixaData.banco_id);
+      if (banco) {
+        const novoSaldo = banco.saldo + valorAjuste;
+        
+        const { error: bancoError } = await supabase
+          .from('bancos')
+          .update({ saldo: novoSaldo })
+          .eq('id', baixaData.banco_id);
 
-      if (bancoError) {
-        toast({
-          title: "Erro",
-          description: "Erro ao atualizar saldo do banco",
-          variant: "destructive"
-        });
-        return;
+        if (bancoError) {
+          toast({
+            title: "Erro",
+            description: "Erro ao atualizar saldo do banco",
+            variant: "destructive"
+          });
+          return;
+        }
       }
     }
 
@@ -387,12 +389,15 @@ const ContasPagarReceber = () => {
     for (const baixa of baixasDaConta) {
       const valorReverso = conta.destino_tipo === 'fornecedor' ? baixa.valor : -baixa.valor;
       
-      await supabase
-        .from('bancos')
-        .update({ 
-          saldo: supabase.raw(`saldo + ${valorReverso}`)
-        })
-        .eq('id', baixa.banco_id);
+      const banco = bancos.find(b => b.id === baixa.banco_id);
+      if (banco) {
+        const novoSaldo = banco.saldo + valorReverso;
+        
+        await supabase
+          .from('bancos')
+          .update({ saldo: novoSaldo })
+          .eq('id', baixa.banco_id);
+      }
     }
 
     // Delete all baixas for this conta

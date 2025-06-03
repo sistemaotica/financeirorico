@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -78,12 +77,19 @@ const Dashboard = () => {
       `)
       .gte('data_vencimento', inicioSemana.toISOString().split('T')[0])
       .lte('data_vencimento', fimSemana.toISOString().split('T')[0])
-      .lt('valor_baixa', supabase.raw('valor'))
+      .lt('valor_baixa', 'valor')
       .order('data_vencimento');
 
     if (!error && contas) {
-      const contasPagar = contas.filter(conta => conta.tipo === 'pagar');
-      const contasReceber = contas.filter(conta => conta.tipo === 'receber');
+      // Mapear os dados para garantir os tipos corretos
+      const contasTyped = contas.map(conta => ({
+        ...conta,
+        tipo: conta.tipo as 'pagar' | 'receber',
+        destino_tipo: conta.destino_tipo as 'cliente' | 'fornecedor'
+      }));
+
+      const contasPagar = contasTyped.filter(conta => conta.tipo === 'pagar');
+      const contasReceber = contasTyped.filter(conta => conta.tipo === 'receber');
       
       setProximosVencimentos(contasPagar.slice(0, 3));
       setProximosRecebimentos(contasReceber.slice(0, 3));
