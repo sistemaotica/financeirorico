@@ -1,11 +1,51 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { ArrowDown, ArrowUp, Wallet, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+
+interface Banco {
+  id: string;
+  nome: string;
+  agencia: string;
+  conta: string;
+  saldo: number;
+}
 
 const Dashboard = () => {
-  // Dados simulados
-  const saldoConta = 25480.50;
+  const [bancos, setBancos] = useState<Banco[]>([]);
+  const [bancoSelecionado, setBancoSelecionado] = useState<string>('');
+  const [saldoBanco, setSaldoBanco] = useState<number>(0);
+
+  useEffect(() => {
+    carregarBancos();
+  }, []);
+
+  useEffect(() => {
+    if (bancoSelecionado) {
+      const banco = bancos.find(b => b.id === bancoSelecionado);
+      setSaldoBanco(banco?.saldo || 0);
+    }
+  }, [bancoSelecionado, bancos]);
+
+  const carregarBancos = async () => {
+    const { data, error } = await supabase
+      .from('bancos')
+      .select('*')
+      .eq('ativo', true)
+      .order('nome');
+
+    if (!error && data) {
+      setBancos(data);
+      if (data.length > 0 && !bancoSelecionado) {
+        setBancoSelecionado(data[0].id);
+      }
+    }
+  };
+
+  // Dados simulados para outras métricas
   const debitosSemana = 3250.00;
   const receberSemana = 8750.00;
 
@@ -16,12 +56,35 @@ const Dashboard = () => {
     }).format(value);
   };
 
+  const bancoAtual = bancos.find(b => b.id === bancoSelecionado);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-gray-600">Visão geral das suas finanças</p>
       </div>
+
+      {/* Seletor de Banco */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="max-w-sm">
+            <Label htmlFor="banco-selector">Selecionar Banco</Label>
+            <Select value={bancoSelecionado} onValueChange={setBancoSelecionado}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um banco" />
+              </SelectTrigger>
+              <SelectContent>
+                {bancos.map((banco) => (
+                  <SelectItem key={banco.id} value={banco.id}>
+                    {banco.nome} - Ag: {banco.agencia} Conta: {banco.conta}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Cards principais */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -37,10 +100,10 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-900">
-              {formatCurrency(saldoConta)}
+              {formatCurrency(saldoBanco)}
             </div>
             <p className="text-xs text-blue-600 mt-1">
-              Conta Corrente Principal
+              {bancoAtual ? `${bancoAtual.nome} - ${bancoAtual.agencia}/${bancoAtual.conta}` : 'Selecione um banco'}
             </p>
           </CardContent>
         </Card>

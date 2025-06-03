@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import BaixaContaDialog from './dialogs/BaixaContaDialog';
+import EditContaDialog from './dialogs/EditContaDialog';
 
 interface Cliente {
   id: string;
@@ -47,13 +48,23 @@ interface Conta {
   fornecedores?: { nome: string };
 }
 
+interface BaixaConta {
+  id: string;
+  conta_id: string;
+  valor: number;
+  data_baixa: string;
+  created_at: string;
+}
+
 const ContasPagarReceber = () => {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [bancos, setBancos] = useState<Banco[]>([]);
   const [contas, setContas] = useState<Conta[]>([]);
+  const [baixasContas, setBaixasContas] = useState<BaixaConta[]>([]);
   const [filtroStatus, setFiltroStatus] = useState<string>('todos');
   const [baixaDialogOpen, setBaixaDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedConta, setSelectedConta] = useState<Conta | null>(null);
   const [formData, setFormData] = useState({
     tipo: 'pagar' as 'pagar' | 'receber',
@@ -73,6 +84,7 @@ const ContasPagarReceber = () => {
     carregarFornecedores();
     carregarBancos();
     carregarContas();
+    carregarBaixasContas();
   }, []);
 
   const carregarClientes = async () => {
@@ -135,6 +147,17 @@ const ContasPagarReceber = () => {
         status: item.status as 'aberto' | 'pago' | 'vencido'
       }));
       setContas(typedData);
+    }
+  };
+
+  const carregarBaixasContas = async () => {
+    const { data, error } = await supabase
+      .from('baixas_contas')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!error) {
+      setBaixasContas(data || []);
     }
   };
 
@@ -237,9 +260,40 @@ const ContasPagarReceber = () => {
     }
   };
 
-  const handleEdit = async (conta: Conta) => {
-    // Implementar edição da conta
-    console.log('Editar conta:', conta);
+  const handleEdit = (conta: Conta) => {
+    setSelectedConta(conta);
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async (conta: Conta) => {
+    const { error } = await supabase
+      .from('contas')
+      .update({
+        tipo: conta.tipo,
+        destino_tipo: conta.destino_tipo,
+        cliente_id: conta.destino_tipo === 'cliente' ? conta.cliente_id : null,
+        fornecedor_id: conta.destino_tipo === 'fornecedor' ? conta.fornecedor_id : null,
+        referencia: conta.referencia,
+        numero_nota: conta.numero_nota,
+        data_vencimento: conta.data_vencimento,
+        valor: conta.valor
+      })
+      .eq('id', conta.id);
+
+    if (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar conta",
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Sucesso",
+        description: "Conta atualizada com sucesso"
+      });
+      setEditDialogOpen(false);
+      carregarContas();
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -288,16 +342,23 @@ const ContasPagarReceber = () => {
       });
       setBaixaDialogOpen(false);
       carregarContas();
+      carregarBaixasContas();
     }
   };
 
   const contasFiltradas = contas.filter(conta => {
     if (filtroStatus === 'todos') return true;
+    if (filtroStatus === 'pago') return conta.valor_baixa >= conta.valor;
+    if (filtroStatus === 'aberto') return conta.valor_baixa < conta.valor;
     return conta.status === filtroStatus;
   });
 
   const contasClientes = contasFiltradas.filter(conta => conta.destino_tipo === 'cliente');
   const contasFornecedores = contasFiltradas.filter(conta => conta.destino_tipo === 'fornecedor');
+
+  const getBaixasHistorico = (contaId: string) => {
+    return baixasContas.filter(baixa => baixa.conta_id === contaId);
+  };
 
   return (
     <div className="space-y-6">
@@ -468,10 +529,10 @@ const ContasPagarReceber = () => {
                     <TableRow>
                       <TableHead>Cliente</TableHead>
                       <TableHead>Referência</TableHead>
-                      <TableHead>Tipo</TableHead>
                       <TableHead>Vencimento</TableHead>
                       <TableHead>Parcela</TableHead>
                       <TableHead>Valor</TableHead>
+                      <TableHead>Valor Baixado</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Ações</TableHead>
                     </TableRow>
@@ -481,35 +542,37 @@ const ContasPagarReceber = () => {
                       <TableRow key={conta.id}>
                         <TableCell>{conta.clientes?.nome}</TableCell>
                         <TableCell>{conta.referencia}</TableCell>
-                        <TableCell>
-                          <span className={`px-2 py-1 rounded text-xs ${
-                            conta.tipo === 'receber' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {conta.tipo === 'receber' ? 'A Receber' : 'A Pagar'}
-                          </span>
-                        </TableCell>
                         <TableCell>{new Date(conta.data_vencimento).toLocaleDateString('pt-BR')}</TableCell>
                         <TableCell>{conta.parcela_numero}/{conta.parcela_total}</TableCell>
                         <TableCell>R$ {conta.valor.toFixed(2)}</TableCell>
+                        <TableCell>R$ {(conta.valor_baixa || 0).toFixed(2)}</TableCell>
                         <TableCell>
                           <span className={`px-2 py-1 rounded text-xs ${
-                            conta.status === 'pago' ? 'bg-green-100 text-green-800' :
+                            conta.valor_baixa >= conta.valor ? 'bg-green-100 text-green-800' :
                             conta.status === 'vencido' ? 'bg-red-100 text-red-800' :
                             'bg-yellow-100 text-yellow-800'
                           }`}>
-                            {conta.status === 'pago' ? 'Pago' : conta.status === 'vencido' ? 'Vencido' : 'Em Aberto'}
+                            {conta.valor_baixa >= conta.valor ? 'Pago' : conta.status === 'vencido' ? 'Vencido' : 'Em Aberto'}
                           </span>
                         </TableCell>
                         <TableCell>
                           <div className="flex space-x-1">
                             <Button size="sm" variant="outline" onClick={() => handleEdit(conta)}>Editar</Button>
                             <Button size="sm" variant="destructive" onClick={() => handleDelete(conta.id)}>Excluir</Button>
-                            {conta.status !== 'pago' && (
+                            {conta.valor_baixa < conta.valor && (
                               <Button size="sm" variant="default" onClick={() => handleBaixa(conta)}>Baixa</Button>
                             )}
                           </div>
+                          {getBaixasHistorico(conta.id).length > 0 && (
+                            <div className="mt-2 text-xs text-gray-600">
+                              <strong>Histórico de Baixas:</strong>
+                              {getBaixasHistorico(conta.id).map((baixa, index) => (
+                                <div key={baixa.id}>
+                                  {new Date(baixa.data_baixa).toLocaleDateString('pt-BR')}: R$ {baixa.valor.toFixed(2)}
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -525,10 +588,10 @@ const ContasPagarReceber = () => {
                     <TableRow>
                       <TableHead>Fornecedor</TableHead>
                       <TableHead>Referência</TableHead>
-                      <TableHead>Tipo</TableHead>
                       <TableHead>Vencimento</TableHead>
                       <TableHead>Parcela</TableHead>
                       <TableHead>Valor</TableHead>
+                      <TableHead>Valor Baixado</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Ações</TableHead>
                     </TableRow>
@@ -538,35 +601,37 @@ const ContasPagarReceber = () => {
                       <TableRow key={conta.id}>
                         <TableCell>{conta.fornecedores?.nome}</TableCell>
                         <TableCell>{conta.referencia}</TableCell>
-                        <TableCell>
-                          <span className={`px-2 py-1 rounded text-xs ${
-                            conta.tipo === 'receber' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {conta.tipo === 'receber' ? 'A Receber' : 'A Pagar'}
-                          </span>
-                        </TableCell>
                         <TableCell>{new Date(conta.data_vencimento).toLocaleDateString('pt-BR')}</TableCell>
                         <TableCell>{conta.parcela_numero}/{conta.parcela_total}</TableCell>
                         <TableCell>R$ {conta.valor.toFixed(2)}</TableCell>
+                        <TableCell>R$ {(conta.valor_baixa || 0).toFixed(2)}</TableCell>
                         <TableCell>
                           <span className={`px-2 py-1 rounded text-xs ${
-                            conta.status === 'pago' ? 'bg-green-100 text-green-800' :
+                            conta.valor_baixa >= conta.valor ? 'bg-green-100 text-green-800' :
                             conta.status === 'vencido' ? 'bg-red-100 text-red-800' :
                             'bg-yellow-100 text-yellow-800'
                           }`}>
-                            {conta.status === 'pago' ? 'Pago' : conta.status === 'vencido' ? 'Vencido' : 'Em Aberto'}
+                            {conta.valor_baixa >= conta.valor ? 'Pago' : conta.status === 'vencido' ? 'Vencido' : 'Em Aberto'}
                           </span>
                         </TableCell>
                         <TableCell>
                           <div className="flex space-x-1">
                             <Button size="sm" variant="outline" onClick={() => handleEdit(conta)}>Editar</Button>
                             <Button size="sm" variant="destructive" onClick={() => handleDelete(conta.id)}>Excluir</Button>
-                            {conta.status !== 'pago' && (
+                            {conta.valor_baixa < conta.valor && (
                               <Button size="sm" variant="default" onClick={() => handleBaixa(conta)}>Baixa</Button>
                             )}
                           </div>
+                          {getBaixasHistorico(conta.id).length > 0 && (
+                            <div className="mt-2 text-xs text-gray-600">
+                              <strong>Histórico de Baixas:</strong>
+                              {getBaixasHistorico(conta.id).map((baixa, index) => (
+                                <div key={baixa.id}>
+                                  {new Date(baixa.data_baixa).toLocaleDateString('pt-BR')}: R$ {baixa.valor.toFixed(2)}
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -584,6 +649,15 @@ const ContasPagarReceber = () => {
         conta={selectedConta}
         bancos={bancos}
         onSave={handleSaveBaixa}
+      />
+
+      <EditContaDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        conta={selectedConta}
+        clientes={clientes}
+        fornecedores={fornecedores}
+        onSave={handleSaveEdit}
       />
     </div>
   );

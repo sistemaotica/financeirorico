@@ -21,6 +21,7 @@ interface Banco {
 
 const CadastroBanco = () => {
   const [bancos, setBancos] = useState<Banco[]>([]);
+  const [editingBanco, setEditingBanco] = useState<Banco | null>(null);
   const [formData, setFormData] = useState({
     nome: '',
     agencia: '',
@@ -63,37 +64,102 @@ const CadastroBanco = () => {
       return;
     }
 
-    const { error } = await supabase
-      .from('bancos')
-      .insert({
-        nome: formData.nome,
-        agencia: formData.agencia || null,
-        conta: formData.conta || null,
-        tipo_banco: formData.tipo_banco,
-        saldo: parseFloat(formData.saldo)
-      });
+    if (editingBanco) {
+      const { error } = await supabase
+        .from('bancos')
+        .update({
+          nome: formData.nome,
+          agencia: formData.agencia || null,
+          conta: formData.conta || null,
+          tipo_banco: formData.tipo_banco,
+          saldo: parseFloat(formData.saldo)
+        })
+        .eq('id', editingBanco.id);
 
-    if (error) {
-      toast({
-        title: "Erro",
-        description: "Erro ao salvar banco",
-        variant: "destructive"
-      });
+      if (error) {
+        toast({
+          title: "Erro",
+          description: "Erro ao atualizar banco",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Sucesso",
+          description: "Banco atualizado com sucesso"
+        });
+        resetForm();
+        carregarBancos();
+      }
     } else {
-      toast({
-        title: "Sucesso",
-        description: "Banco cadastrado com sucesso"
-      });
-      
-      setFormData({
-        nome: '',
-        agencia: '',
-        conta: '',
-        tipo_banco: 'CC',
-        saldo: ''
-      });
-      
-      carregarBancos();
+      const { error } = await supabase
+        .from('bancos')
+        .insert({
+          nome: formData.nome,
+          agencia: formData.agencia || null,
+          conta: formData.conta || null,
+          tipo_banco: formData.tipo_banco,
+          saldo: parseFloat(formData.saldo)
+        });
+
+      if (error) {
+        toast({
+          title: "Erro",
+          description: "Erro ao salvar banco",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Sucesso",
+          description: "Banco cadastrado com sucesso"
+        });
+        resetForm();
+        carregarBancos();
+      }
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      nome: '',
+      agencia: '',
+      conta: '',
+      tipo_banco: 'CC',
+      saldo: ''
+    });
+    setEditingBanco(null);
+  };
+
+  const handleEdit = (banco: Banco) => {
+    setFormData({
+      nome: banco.nome,
+      agencia: banco.agencia || '',
+      conta: banco.conta || '',
+      tipo_banco: banco.tipo_banco as 'CC' | 'CP' | 'Invest',
+      saldo: banco.saldo.toString()
+    });
+    setEditingBanco(banco);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Tem certeza que deseja excluir este banco?')) {
+      const { error } = await supabase
+        .from('bancos')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        toast({
+          title: "Erro",
+          description: "Erro ao excluir banco",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Sucesso",
+          description: "Banco excluído com sucesso"
+        });
+        carregarBancos();
+      }
     }
   };
 
@@ -123,7 +189,7 @@ const CadastroBanco = () => {
       {/* Formulário de Cadastro */}
       <Card>
         <CardHeader>
-          <CardTitle>Cadastrar Banco</CardTitle>
+          <CardTitle>{editingBanco ? 'Editar Banco' : 'Cadastrar Banco'}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -173,7 +239,7 @@ const CadastroBanco = () => {
             </div>
 
             <div>
-              <Label htmlFor="saldo">Saldo Inicial *</Label>
+              <Label htmlFor="saldo">Saldo {editingBanco ? 'Atual' : 'Inicial'} *</Label>
               <Input
                 id="saldo"
                 type="number"
@@ -185,9 +251,16 @@ const CadastroBanco = () => {
               />
             </div>
 
-            <Button type="submit" className="w-full">
-              Cadastrar Banco
-            </Button>
+            <div className="flex space-x-2">
+              <Button type="submit" className="flex-1">
+                {editingBanco ? 'Atualizar Banco' : 'Cadastrar Banco'}
+              </Button>
+              {editingBanco && (
+                <Button type="button" variant="outline" onClick={resetForm}>
+                  Cancelar
+                </Button>
+              )}
+            </div>
           </form>
         </CardContent>
       </Card>
@@ -229,13 +302,29 @@ const CadastroBanco = () => {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <Button
-                        size="sm"
-                        variant={banco.ativo ? "destructive" : "default"}
-                        onClick={() => alternarAtivo(banco.id, banco.ativo)}
-                      >
-                        {banco.ativo ? 'Desativar' : 'Ativar'}
-                      </Button>
+                      <div className="flex space-x-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEdit(banco)}
+                        >
+                          Editar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDelete(banco.id)}
+                        >
+                          Excluir
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={banco.ativo ? "destructive" : "default"}
+                          onClick={() => alternarAtivo(banco.id, banco.ativo)}
+                        >
+                          {banco.ativo ? 'Desativar' : 'Ativar'}
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

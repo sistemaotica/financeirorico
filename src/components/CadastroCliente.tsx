@@ -20,6 +20,7 @@ interface Cliente {
 
 const CadastroCliente = () => {
   const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [editingCliente, setEditingCliente] = useState<Cliente | null>(null);
   const [formData, setFormData] = useState({
     nome: '',
     cpf_cnpj: '',
@@ -62,37 +63,102 @@ const CadastroCliente = () => {
       return;
     }
 
-    const { error } = await supabase
-      .from('clientes')
-      .insert({
-        nome: formData.nome,
-        cpf_cnpj: formData.cpf_cnpj,
-        email: formData.email || null,
-        telefone: formData.telefone || null,
-        endereco: formData.endereco || null
-      });
+    if (editingCliente) {
+      const { error } = await supabase
+        .from('clientes')
+        .update({
+          nome: formData.nome,
+          cpf_cnpj: formData.cpf_cnpj,
+          email: formData.email || null,
+          telefone: formData.telefone || null,
+          endereco: formData.endereco || null
+        })
+        .eq('id', editingCliente.id);
 
-    if (error) {
-      toast({
-        title: "Erro",
-        description: "Erro ao salvar cliente",
-        variant: "destructive"
-      });
+      if (error) {
+        toast({
+          title: "Erro",
+          description: "Erro ao atualizar cliente",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Sucesso",
+          description: "Cliente atualizado com sucesso"
+        });
+        resetForm();
+        carregarClientes();
+      }
     } else {
-      toast({
-        title: "Sucesso",
-        description: "Cliente cadastrado com sucesso"
-      });
-      
-      setFormData({
-        nome: '',
-        cpf_cnpj: '',
-        email: '',
-        telefone: '',
-        endereco: ''
-      });
-      
-      carregarClientes();
+      const { error } = await supabase
+        .from('clientes')
+        .insert({
+          nome: formData.nome,
+          cpf_cnpj: formData.cpf_cnpj,
+          email: formData.email || null,
+          telefone: formData.telefone || null,
+          endereco: formData.endereco || null
+        });
+
+      if (error) {
+        toast({
+          title: "Erro",
+          description: "Erro ao salvar cliente",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Sucesso",
+          description: "Cliente cadastrado com sucesso"
+        });
+        resetForm();
+        carregarClientes();
+      }
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      nome: '',
+      cpf_cnpj: '',
+      email: '',
+      telefone: '',
+      endereco: ''
+    });
+    setEditingCliente(null);
+  };
+
+  const handleEdit = (cliente: Cliente) => {
+    setFormData({
+      nome: cliente.nome,
+      cpf_cnpj: cliente.cpf_cnpj || '',
+      email: cliente.email || '',
+      telefone: cliente.telefone || '',
+      endereco: cliente.endereco || ''
+    });
+    setEditingCliente(cliente);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Tem certeza que deseja excluir este cliente?')) {
+      const { error } = await supabase
+        .from('clientes')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        toast({
+          title: "Erro",
+          description: "Erro ao excluir cliente",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Sucesso",
+          description: "Cliente excluído com sucesso"
+        });
+        carregarClientes();
+      }
     }
   };
 
@@ -122,7 +188,7 @@ const CadastroCliente = () => {
       {/* Formulário de Cadastro */}
       <Card>
         <CardHeader>
-          <CardTitle>Cadastrar Cliente</CardTitle>
+          <CardTitle>{editingCliente ? 'Editar Cliente' : 'Cadastrar Cliente'}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -179,9 +245,16 @@ const CadastroCliente = () => {
               />
             </div>
 
-            <Button type="submit" className="w-full">
-              Cadastrar Cliente
-            </Button>
+            <div className="flex space-x-2">
+              <Button type="submit" className="flex-1">
+                {editingCliente ? 'Atualizar Cliente' : 'Cadastrar Cliente'}
+              </Button>
+              {editingCliente && (
+                <Button type="button" variant="outline" onClick={resetForm}>
+                  Cancelar
+                </Button>
+              )}
+            </div>
           </form>
         </CardContent>
       </Card>
@@ -219,13 +292,29 @@ const CadastroCliente = () => {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <Button
-                        size="sm"
-                        variant={cliente.ativo ? "destructive" : "default"}
-                        onClick={() => alternarAtivo(cliente.id, cliente.ativo)}
-                      >
-                        {cliente.ativo ? 'Desativar' : 'Ativar'}
-                      </Button>
+                      <div className="flex space-x-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEdit(cliente)}
+                        >
+                          Editar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDelete(cliente.id)}
+                        >
+                          Excluir
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={cliente.ativo ? "destructive" : "default"}
+                          onClick={() => alternarAtivo(cliente.id, cliente.ativo)}
+                        >
+                          {cliente.ativo ? 'Desativar' : 'Ativar'}
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

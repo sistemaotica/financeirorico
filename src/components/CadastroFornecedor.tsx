@@ -20,6 +20,7 @@ interface Fornecedor {
 
 const CadastroFornecedor = () => {
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
+  const [editingFornecedor, setEditingFornecedor] = useState<Fornecedor | null>(null);
   const [formData, setFormData] = useState({
     nome: '',
     cpf_cnpj: '',
@@ -62,37 +63,102 @@ const CadastroFornecedor = () => {
       return;
     }
 
-    const { error } = await supabase
-      .from('fornecedores')
-      .insert({
-        nome: formData.nome,
-        cpf_cnpj: formData.cpf_cnpj,
-        email: formData.email || null,
-        telefone: formData.telefone || null,
-        endereco: formData.endereco || null
-      });
+    if (editingFornecedor) {
+      const { error } = await supabase
+        .from('fornecedores')
+        .update({
+          nome: formData.nome,
+          cpf_cnpj: formData.cpf_cnpj,
+          email: formData.email || null,
+          telefone: formData.telefone || null,
+          endereco: formData.endereco || null
+        })
+        .eq('id', editingFornecedor.id);
 
-    if (error) {
-      toast({
-        title: "Erro",
-        description: "Erro ao salvar fornecedor",
-        variant: "destructive"
-      });
+      if (error) {
+        toast({
+          title: "Erro",
+          description: "Erro ao atualizar fornecedor",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Sucesso",
+          description: "Fornecedor atualizado com sucesso"
+        });
+        resetForm();
+        carregarFornecedores();
+      }
     } else {
-      toast({
-        title: "Sucesso",
-        description: "Fornecedor cadastrado com sucesso"
-      });
-      
-      setFormData({
-        nome: '',
-        cpf_cnpj: '',
-        email: '',
-        telefone: '',
-        endereco: ''
-      });
-      
-      carregarFornecedores();
+      const { error } = await supabase
+        .from('fornecedores')
+        .insert({
+          nome: formData.nome,
+          cpf_cnpj: formData.cpf_cnpj,
+          email: formData.email || null,
+          telefone: formData.telefone || null,
+          endereco: formData.endereco || null
+        });
+
+      if (error) {
+        toast({
+          title: "Erro",
+          description: "Erro ao salvar fornecedor",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Sucesso",
+          description: "Fornecedor cadastrado com sucesso"
+        });
+        resetForm();
+        carregarFornecedores();
+      }
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      nome: '',
+      cpf_cnpj: '',
+      email: '',
+      telefone: '',
+      endereco: ''
+    });
+    setEditingFornecedor(null);
+  };
+
+  const handleEdit = (fornecedor: Fornecedor) => {
+    setFormData({
+      nome: fornecedor.nome,
+      cpf_cnpj: fornecedor.cpf_cnpj || '',
+      email: fornecedor.email || '',
+      telefone: fornecedor.telefone || '',
+      endereco: fornecedor.endereco || ''
+    });
+    setEditingFornecedor(fornecedor);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Tem certeza que deseja excluir este fornecedor?')) {
+      const { error } = await supabase
+        .from('fornecedores')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        toast({
+          title: "Erro",
+          description: "Erro ao excluir fornecedor",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Sucesso",
+          description: "Fornecedor excluído com sucesso"
+        });
+        carregarFornecedores();
+      }
     }
   };
 
@@ -122,7 +188,7 @@ const CadastroFornecedor = () => {
       {/* Formulário de Cadastro */}
       <Card>
         <CardHeader>
-          <CardTitle>Cadastrar Fornecedor</CardTitle>
+          <CardTitle>{editingFornecedor ? 'Editar Fornecedor' : 'Cadastrar Fornecedor'}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -179,9 +245,16 @@ const CadastroFornecedor = () => {
               />
             </div>
 
-            <Button type="submit" className="w-full">
-              Cadastrar Fornecedor
-            </Button>
+            <div className="flex space-x-2">
+              <Button type="submit" className="flex-1">
+                {editingFornecedor ? 'Atualizar Fornecedor' : 'Cadastrar Fornecedor'}
+              </Button>
+              {editingFornecedor && (
+                <Button type="button" variant="outline" onClick={resetForm}>
+                  Cancelar
+                </Button>
+              )}
+            </div>
           </form>
         </CardContent>
       </Card>
@@ -219,13 +292,29 @@ const CadastroFornecedor = () => {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <Button
-                        size="sm"
-                        variant={fornecedor.ativo ? "destructive" : "default"}
-                        onClick={() => alternarAtivo(fornecedor.id, fornecedor.ativo)}
-                      >
-                        {fornecedor.ativo ? 'Desativar' : 'Ativar'}
-                      </Button>
+                      <div className="flex space-x-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEdit(fornecedor)}
+                        >
+                          Editar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDelete(fornecedor.id)}
+                        >
+                          Excluir
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={fornecedor.ativo ? "destructive" : "default"}
+                          onClick={() => alternarAtivo(fornecedor.id, fornecedor.ativo)}
+                        >
+                          {fornecedor.ativo ? 'Desativar' : 'Ativar'}
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
