@@ -67,8 +67,6 @@ const ContasPagarReceber = () => {
   const [filtroStatus, setFiltroStatus] = useState<string>('todos');
   const [baixaDialogOpen, setBaixaDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [desfazerDialogOpen, setDesfazerDialogOpen] = useState(false);
-  const [contaParaDesfazer, setContaParaDesfazer] = useState<Conta | null>(null);
   const [selectedConta, setSelectedConta] = useState<Conta | null>(null);
   const [formData, setFormData] = useState({
     tipo: 'pagar' as 'pagar' | 'receber',
@@ -420,93 +418,110 @@ const ContasPagarReceber = () => {
     carregarBaixasContas();
   };
 
-  const handleDesfazerMovimentacao = (conta: Conta) => {
-    setContaParaDesfazer(conta);
-    setDesfazerDialogOpen(true);
-  };
-
-  const handleConfirmDesfazer = async (bancoId: string) => {
-    if (!contaParaDesfazer) return;
-
-    const baixasDaConta = baixasContas.filter(baixa => baixa.conta_id === contaParaDesfazer.id);
-    const valorTotalBaixas = baixasDaConta.reduce((total, baixa) => total + baixa.valor, 0);
-
-    // Atualizar saldo do banco selecionado conforme o tipo de conta
-    const banco = bancos.find(b => b.id === bancoId);
-    if (banco) {
-      let novoSaldo: number;
+  const handleDesfazerMovimentacao = async (conta: Conta) => {
+    if (confirm('Tem certeza que deseja desfazer todas as baixas desta conta?')) {
+      const baixasDaConta = baixasContas.filter(baixa => baixa.conta_id === conta.id);
       
-      // Para fornecedores: CREDITAR (somar ao saldo)
-      // Para clientes: DEBITAR (subtrair do saldo)
-      if (contaParaDesfazer.destino_tipo === 'fornecedor') {
-        novoSaldo = banco.saldo + valorTotalBaixas;
-      } else {
-        novoSaldo = banco.saldo - valorTotalBaixas;
-      }
-      
-      const { error: bancoError } = await supabase
-        .from('bancos')
-        .update({ saldo: novoSaldo })
-        .eq('id', bancoId);
-
-      if (bancoError) {
+      if (baixasDaConta.length === 0) {
         toast({
-          title: "Erro",
-          description: "Erro ao atualizar saldo do banco",
+          title: "Aviso",
+          description: "Não há baixas para desfazer nesta conta",
           variant: "destructive"
         });
         return;
       }
 
-      // Update local bancos state
-      setBancos(prev => prev.map(b => 
-        b.id === bancoId ? { ...b, saldo: novoSaldo } : b
-      ));
-    }
+      // Agrupar baixas por banco para calcular o total por banco
+      const baixasPorBanco = baixasDaConta.reduce((acc, baixa) => {
+        if (!acc[baixa.banco_id]) {
+          acc[baixa.banco_id] = 0;
+        }
+        acc[baixa.banco_id] += baixa.valor;
+        return acc;
+      }, {} as Record<string, number>);
 
-    // Delete all baixas for this conta
-    const { error: deleteBaixasError } = await supabase
-      .from('baixas_contas')
-      .delete()
-      .eq('conta_id', contaParaDesfazer.id);
+      // Atualizar saldo de cada banco conforme as regras
+      for (const [bancoId, valorTotal] of Object.entries(baixasPorBanco)) {
+        const banco = bancos.find(b => b.id === bancoId);
+        if (banco) {
+          let novoSaldo: number;
+          
+          // REGRA: Sempre subtrair o valor da baixa do banco (desfazendo a operação original)
+          // Se era conta de fornecedor (que diminuía o saldo), ao desfazer, soma de volta
+          // Se era conta de cliente (que aumentava o saldo), ao desfazer, subtrai de volta
+          if (conta.destino_tipo === 'fornecedor') {
+            // Conta de fornecedor: a baixa original diminuía o saldo, então ao desfazer, soma de volta
+            novoSaldo = banco.saldo + valorTotal;
+          } else {
+            // Conta de cliente: a baixa original aumentava o saldo, então ao desfazer, subtrai de volta
+            novoSaldo = banco.saldo - valorTotal;
+          }
+          
+          const { error: bancoError } = await supabase
+            .from('bancos')
+            .update({ saldo: novoSaldo })
+            .eq('id', bancoId);
 
-    if (deleteBaixasError) {
+          if (bancoError) {
+            toast({
+              title: "Erro",
+              description: `Erro ao atualizar saldo do banco ${banco.nome}`,
+              variant: "destructive"
+            });
+            return;
+          }
+
+          // Update local bancos state
+          setBancos(prev => prev.map(b => 
+            b.id === bancoId ? { ...b, saldo: novoSaldo } : b
+          ));
+        }
+      }
+
+      // Delete all baixas for this conta
+      const { error: deleteBaixasError } = await supabase
+        .from('baixas_contas')
+        .delete()
+        .eq('conta_id', conta.id);
+
+      if (deleteBaixasError) {
+        toast({
+          title: "Erro",
+          description: "Erro ao desfazer baixas",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Reset conta values
+      const { error: updateContaError } = await supabase
+        .from('contas')
+        .update({
+          valor_baixa: 0,
+          status: 'aberto'
+        })
+        .eq('id', conta.id);
+
+      if (updateContaError) {
+        toast({
+          title: "Erro",
+          description: "Erro ao resetar conta",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const totalGeral = Object.values(baixasPorBanco).reduce((sum, valor) => sum + valor, 0);
+      const bancosAfetados = Object.keys(baixasPorBanco).length;
+
       toast({
-        title: "Erro",
-        description: "Erro ao desfazer baixas",
-        variant: "destructive"
+        title: "Sucesso",
+        description: `Movimentação desfeita! Total de R$ ${totalGeral.toFixed(2)} foi ajustado em ${bancosAfetados} banco(s). A conta retornou ao estado "Em Aberto".`
       });
-      return;
+      
+      carregarContas();
+      carregarBaixasContas();
     }
-
-    // Reset conta values
-    const { error: updateContaError } = await supabase
-      .from('contas')
-      .update({
-        valor_baixa: 0,
-        status: 'aberto'
-      })
-      .eq('id', contaParaDesfazer.id);
-
-    if (updateContaError) {
-      toast({
-        title: "Erro",
-        description: "Erro ao resetar conta",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const tipoOperacao = contaParaDesfazer.destino_tipo === 'fornecedor' ? 'creditado' : 'debitado';
-    const bancoNome = banco?.nome || 'banco selecionado';
-
-    toast({
-      title: "Sucesso",
-      description: `Movimentação desfeita. R$ ${valorTotalBaixas.toFixed(2)} ${tipoOperacao} no ${bancoNome}. A conta retornou ao estado "Em Aberto".`
-    });
-    
-    carregarContas();
-    carregarBaixasContas();
   };
 
   const contasFiltradas = contas.filter(conta => {
@@ -738,11 +753,14 @@ const ContasPagarReceber = () => {
                           {getBaixasHistorico(conta.id).length > 0 && (
                             <div className="mt-2 text-xs text-gray-600">
                               <strong>Histórico de Baixas:</strong>
-                              {getBaixasHistorico(conta.id).map((baixa) => (
-                                <div key={baixa.id}>
-                                  {new Date(baixa.data_baixa + 'T00:00:00').toLocaleDateString('pt-BR')}: R$ {baixa.valor.toFixed(2)}
-                                </div>
-                              ))}
+                              {getBaixasHistorico(conta.id).map((baixa) => {
+                                const banco = bancos.find(b => b.id === baixa.banco_id);
+                                return (
+                                  <div key={baixa.id}>
+                                    {new Date(baixa.data_baixa + 'T00:00:00').toLocaleDateString('pt-BR')}: R$ {baixa.valor.toFixed(2)} ({banco?.nome || 'Banco não encontrado'})
+                                  </div>
+                                );
+                              })}
                             </div>
                           )}
                         </TableCell>
@@ -802,11 +820,14 @@ const ContasPagarReceber = () => {
                           {getBaixasHistorico(conta.id).length > 0 && (
                             <div className="mt-2 text-xs text-gray-600">
                               <strong>Histórico de Baixas:</strong>
-                              {getBaixasHistorico(conta.id).map((baixa) => (
-                                <div key={baixa.id}>
-                                  {new Date(baixa.data_baixa + 'T00:00:00').toLocaleDateString('pt-BR')}: R$ {baixa.valor.toFixed(2)}
-                                </div>
-                              ))}
+                              {getBaixasHistorico(conta.id).map((baixa) => {
+                                const banco = bancos.find(b => b.id === baixa.banco_id);
+                                return (
+                                  <div key={baixa.id}>
+                                    {new Date(baixa.data_baixa + 'T00:00:00').toLocaleDateString('pt-BR')}: R$ {baixa.valor.toFixed(2)} ({banco?.nome || 'Banco não encontrado'})
+                                  </div>
+                                );
+                              })}
                             </div>
                           )}
                         </TableCell>
@@ -835,15 +856,6 @@ const ContasPagarReceber = () => {
         clientes={clientes}
         fornecedores={fornecedores}
         onSave={handleSaveEdit}
-      />
-
-      <DesfazerMovimentacaoDialog
-        open={desfazerDialogOpen}
-        onOpenChange={setDesfazerDialogOpen}
-        conta={contaParaDesfazer}
-        bancos={bancos}
-        valorTotalBaixas={contaParaDesfazer ? getValorTotalBaixas(contaParaDesfazer.id) : 0}
-        onConfirm={handleConfirmDesfazer}
       />
     </div>
   );
