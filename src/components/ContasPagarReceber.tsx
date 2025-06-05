@@ -9,9 +9,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Undo } from 'lucide-react';
 import BaixaContaDialog from './dialogs/BaixaContaDialog';
 import EditContaDialog from './dialogs/EditContaDialog';
-import DesfazerMovimentacaoDialog from './dialogs/DesfazerMovimentacaoDialog';
 
 interface Cliente {
   id: string;
@@ -418,105 +418,101 @@ const ContasPagarReceber = () => {
     carregarBaixasContas();
   };
 
-  const handleDesfazerMovimentacao = async (conta: Conta) => {
-    if (confirm('Tem certeza que deseja desfazer todas as baixas desta conta?')) {
-      const baixasDaConta = baixasContas.filter(baixa => baixa.conta_id === conta.id);
+  const handleDesfazerBaixaIndividual = async (baixa: BaixaConta) => {
+    if (confirm(`Tem certeza que deseja desfazer esta baixa de R$ ${baixa.valor.toFixed(2)}?`)) {
+      const conta = contas.find(c => c.id === baixa.conta_id);
+      const banco = bancos.find(b => b.id === baixa.banco_id);
       
-      if (baixasDaConta.length === 0) {
-        toast({
-          title: "Aviso",
-          description: "Não há baixas para desfazer nesta conta",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Agrupar baixas por banco para calcular o total por banco
-      const baixasPorBanco = baixasDaConta.reduce((acc, baixa) => {
-        if (!acc[baixa.banco_id]) {
-          acc[baixa.banco_id] = 0;
-        }
-        acc[baixa.banco_id] += baixa.valor;
-        return acc;
-      }, {} as Record<string, number>);
-
-      // Atualizar saldo de cada banco conforme as regras
-      for (const [bancoId, valorTotal] of Object.entries(baixasPorBanco)) {
-        const banco = bancos.find(b => b.id === bancoId);
-        if (banco) {
-          let novoSaldo: number;
-          
-          // REGRA: Sempre subtrair o valor da baixa do banco (desfazendo a operação original)
-          // Se era conta de fornecedor (que diminuía o saldo), ao desfazer, soma de volta
-          // Se era conta de cliente (que aumentava o saldo), ao desfazer, subtrai de volta
-          if (conta.destino_tipo === 'fornecedor') {
-            // Conta de fornecedor: a baixa original diminuía o saldo, então ao desfazer, soma de volta
-            novoSaldo = banco.saldo + valorTotal;
-          } else {
-            // Conta de cliente: a baixa original aumentava o saldo, então ao desfazer, subtrai de volta
-            novoSaldo = banco.saldo - valorTotal;
-          }
-          
-          const { error: bancoError } = await supabase
-            .from('bancos')
-            .update({ saldo: novoSaldo })
-            .eq('id', bancoId);
-
-          if (bancoError) {
-            toast({
-              title: "Erro",
-              description: `Erro ao atualizar saldo do banco ${banco.nome}`,
-              variant: "destructive"
-            });
-            return;
-          }
-
-          // Update local bancos state
-          setBancos(prev => prev.map(b => 
-            b.id === bancoId ? { ...b, saldo: novoSaldo } : b
-          ));
-        }
-      }
-
-      // Delete all baixas for this conta
-      const { error: deleteBaixasError } = await supabase
-        .from('baixas_contas')
-        .delete()
-        .eq('conta_id', conta.id);
-
-      if (deleteBaixasError) {
+      if (!conta || !banco) {
         toast({
           title: "Erro",
-          description: "Erro ao desfazer baixas",
+          description: "Conta ou banco não encontrado",
           variant: "destructive"
         });
         return;
       }
 
-      // Reset conta values
+      // Calcular o novo saldo do banco (reverso da operação original)
+      let novoSaldo: number;
+      
+      // Se a conta é de fornecedor (pagar), a baixa original diminuía o saldo, então ao desfazer, soma de volta
+      // Se a conta é de cliente (receber), a baixa original aumentava o saldo, então ao desfazer, subtrai de volta
+      if (conta.destino_tipo === 'fornecedor') {
+        novoSaldo = banco.saldo + baixa.valor;
+      } else {
+        novoSaldo = banco.saldo - baixa.valor;
+      }
+
+      // Verificar se o banco tem saldo suficiente (no caso de débito)
+      if (conta.destino_tipo === 'cliente' && novoSaldo < 0) {
+        toast({
+          title: "Erro",
+          description: "Saldo insuficiente no banco para realizar o estorno",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Atualizar saldo do banco
+      const { error: bancoError } = await supabase
+        .from('bancos')
+        .update({ saldo: novoSaldo })
+        .eq('id', baixa.banco_id);
+
+      if (bancoError) {
+        toast({
+          title: "Erro",
+          description: "Erro ao atualizar saldo do banco",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Remover a baixa específica
+      const { error: deleteBaixaError } = await supabase
+        .from('baixas_contas')
+        .delete()
+        .eq('id', baixa.id);
+
+      if (deleteBaixaError) {
+        toast({
+          title: "Erro",
+          description: "Erro ao remover baixa",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Recalcular o valor_baixa da conta
+      const baixasRestantes = baixasContas.filter(b => b.conta_id === baixa.conta_id && b.id !== baixa.id);
+      const novoValorBaixa = baixasRestantes.reduce((total, b) => total + b.valor, 0);
+
+      // Atualizar a conta com o novo valor_baixa e status
       const { error: updateContaError } = await supabase
         .from('contas')
         .update({
-          valor_baixa: 0,
-          status: 'aberto'
+          valor_baixa: novoValorBaixa,
+          status: novoValorBaixa >= conta.valor ? 'pago' : 'aberto'
         })
         .eq('id', conta.id);
 
       if (updateContaError) {
         toast({
           title: "Erro",
-          description: "Erro ao resetar conta",
+          description: "Erro ao atualizar conta",
           variant: "destructive"
         });
         return;
       }
 
-      const totalGeral = Object.values(baixasPorBanco).reduce((sum, valor) => sum + valor, 0);
-      const bancosAfetados = Object.keys(baixasPorBanco).length;
+      // Atualizar estados locais
+      setBancos(prev => prev.map(b => 
+        b.id === baixa.banco_id ? { ...b, saldo: novoSaldo } : b
+      ));
 
       toast({
         title: "Sucesso",
-        description: `Movimentação desfeita! Total de R$ ${totalGeral.toFixed(2)} foi ajustado em ${bancosAfetados} banco(s). A conta retornou ao estado "Em Aberto".`
+        description: `Baixa de R$ ${baixa.valor.toFixed(2)} foi desfeita. Saldo do ${banco.nome} ajustado.`
       });
       
       carregarContas();
@@ -744,11 +740,6 @@ const ContasPagarReceber = () => {
                             {conta.valor_baixa < conta.valor && (
                               <Button size="sm" variant="default" onClick={() => handleBaixa(conta)}>Baixa</Button>
                             )}
-                            {conta.valor_baixa > 0 && (
-                              <Button size="sm" variant="secondary" onClick={() => handleDesfazerMovimentacao(conta)}>
-                                Desfazer
-                              </Button>
-                            )}
                           </div>
                           {getBaixasHistorico(conta.id).length > 0 && (
                             <div className="mt-2 text-xs text-gray-600">
@@ -756,8 +747,19 @@ const ContasPagarReceber = () => {
                               {getBaixasHistorico(conta.id).map((baixa) => {
                                 const banco = bancos.find(b => b.id === baixa.banco_id);
                                 return (
-                                  <div key={baixa.id}>
-                                    {new Date(baixa.data_baixa + 'T00:00:00').toLocaleDateString('pt-BR')}: R$ {baixa.valor.toFixed(2)} ({banco?.nome || 'Banco não encontrado'})
+                                  <div key={baixa.id} className="flex items-center justify-between">
+                                    <span>
+                                      {new Date(baixa.data_baixa + 'T00:00:00').toLocaleDateString('pt-BR')}: R$ {baixa.valor.toFixed(2)} ({banco?.nome || 'Banco não encontrado'})
+                                    </span>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => handleDesfazerBaixaIndividual(baixa)}
+                                      className="ml-2 h-6 w-6 p-0"
+                                      title="Desfazer esta baixa"
+                                    >
+                                      <Undo className="h-3 w-3" />
+                                    </Button>
                                   </div>
                                 );
                               })}
@@ -811,11 +813,6 @@ const ContasPagarReceber = () => {
                             {conta.valor_baixa < conta.valor && (
                               <Button size="sm" variant="default" onClick={() => handleBaixa(conta)}>Baixa</Button>
                             )}
-                            {conta.valor_baixa > 0 && (
-                              <Button size="sm" variant="secondary" onClick={() => handleDesfazerMovimentacao(conta)}>
-                                Desfazer
-                              </Button>
-                            )}
                           </div>
                           {getBaixasHistorico(conta.id).length > 0 && (
                             <div className="mt-2 text-xs text-gray-600">
@@ -823,8 +820,19 @@ const ContasPagarReceber = () => {
                               {getBaixasHistorico(conta.id).map((baixa) => {
                                 const banco = bancos.find(b => b.id === baixa.banco_id);
                                 return (
-                                  <div key={baixa.id}>
-                                    {new Date(baixa.data_baixa + 'T00:00:00').toLocaleDateString('pt-BR')}: R$ {baixa.valor.toFixed(2)} ({banco?.nome || 'Banco não encontrado'})
+                                  <div key={baixa.id} className="flex items-center justify-between">
+                                    <span>
+                                      {new Date(baixa.data_baixa + 'T00:00:00').toLocaleDateString('pt-BR')}: R$ {baixa.valor.toFixed(2)} ({banco?.nome || 'Banco não encontrado'})
+                                    </span>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => handleDesfazerBaixaIndividual(baixa)}
+                                      className="ml-2 h-6 w-6 p-0"
+                                      title="Desfazer esta baixa"
+                                    >
+                                      <Undo className="h-3 w-3" />
+                                    </Button>
                                   </div>
                                 );
                               })}
