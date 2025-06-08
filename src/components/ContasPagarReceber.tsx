@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -444,17 +443,18 @@ const ContasPagarReceber = () => {
         return;
       }
 
-      // Para fornecedores (contas a pagar), ao desfazer a baixa, devemos SOMAR o valor de volta ao banco
-      // Para clientes (contas a receber), ao desfazer a baixa, devemos SUBTRAIR o valor do banco
+      // Calcular o novo saldo baseado no tipo da conta
       let novoSaldo: number;
       
       if (conta.destino_tipo === 'fornecedor') {
-        novoSaldo = banco.saldo + baixa.valor;  // Soma de volta para fornecedores
+        // Para fornecedores (contas a pagar), ao desfazer a baixa, soma de volta ao banco
+        novoSaldo = banco.saldo + baixa.valor;
         console.log(`Fornecedor: Saldo atual ${banco.saldo} + baixa ${baixa.valor} = novo saldo ${novoSaldo}`);
       } else {
-        novoSaldo = banco.saldo - baixa.valor;  // Subtrai para clientes
+        // Para clientes (contas a receber), ao desfazer a baixa, subtrai do banco
+        novoSaldo = banco.saldo - baixa.valor;
         
-        // Verificar se o banco tem saldo suficiente (no caso de débito para clientes)
+        // Verificar se o banco tem saldo suficiente
         if (novoSaldo < 0) {
           toast({
             title: "Erro",
@@ -466,8 +466,13 @@ const ContasPagarReceber = () => {
         console.log(`Cliente: Saldo atual ${banco.saldo} - baixa ${baixa.valor} = novo saldo ${novoSaldo}`);
       }
 
-      // EMITIR EVENTO IMEDIATAMENTE ANTES DE QUALQUER OPERAÇÃO NO BANCO
-      console.log('ContasPagarReceber: Emitindo evento bancoSaldoAtualizado IMEDIATAMENTE', { 
+      // PRIMEIRO: Atualizar estado local IMEDIATAMENTE
+      setBancos(prev => prev.map(b => 
+        b.id === baixa.banco_id ? { ...b, saldo: novoSaldo } : b
+      ));
+
+      // SEGUNDO: Emitir evento IMEDIATAMENTE para o Dashboard
+      console.log('ContasPagarReceber: Emitindo evento bancoSaldoAtualizado IMEDIATAMENTE ao desfazer baixa', { 
         bancoId: baixa.banco_id, 
         novoSaldo: novoSaldo 
       });
@@ -476,12 +481,7 @@ const ContasPagarReceber = () => {
         novoSaldo: novoSaldo 
       });
 
-      // Atualizar estado local IMEDIATAMENTE
-      setBancos(prev => prev.map(b => 
-        b.id === baixa.banco_id ? { ...b, saldo: novoSaldo } : b
-      ));
-
-      // Primeiro, atualizar saldo do banco
+      // TERCEIRO: Atualizar saldo do banco no database
       const { error: bancoError } = await supabase
         .from('bancos')
         .update({ saldo: novoSaldo })

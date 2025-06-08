@@ -38,43 +38,48 @@ const Dashboard = () => {
   useEffect(() => {
     carregarBancos();
     carregarContasAtrasadas();
-    
-    // Escutar eventos de atualização de banco
+  }, []);
+
+  // Configurar listener de eventos separadamente
+  useEffect(() => {
     const handleBancoUpdate = (data: { bancoId: string; novoSaldo: number }) => {
-      console.log('Dashboard: Recebido evento de atualização de banco:', data);
+      console.log('Dashboard: Recebido evento de atualização de banco IMEDIATAMENTE:', data);
       
-      // Atualizar IMEDIATAMENTE o estado dos bancos
-      setBancos(prev => {
-        const bancosAtualizados = prev.map(banco => 
+      // Atualizar o array de bancos IMEDIATAMENTE
+      setBancos(prevBancos => {
+        const novoBancos = prevBancos.map(banco => 
           banco.id === data.bancoId 
             ? { ...banco, saldo: data.novoSaldo } 
             : banco
         );
-        console.log('Dashboard: Bancos atualizados:', bancosAtualizados);
-        return bancosAtualizados;
+        console.log('Dashboard: Array de bancos atualizado:', novoBancos);
+        return novoBancos;
       });
       
-      // Atualizar IMEDIATAMENTE o saldo se for o banco selecionado
+      // Se é o banco selecionado, atualizar o saldo IMEDIATAMENTE
       if (data.bancoId === bancoSelecionado) {
-        console.log('Dashboard: Atualizando saldo do banco selecionado IMEDIATAMENTE:', data.novoSaldo);
+        console.log('Dashboard: Atualizando saldo do banco selecionado para:', data.novoSaldo);
         setSaldoBanco(data.novoSaldo);
       }
     };
 
+    // Registrar o evento
     eventBus.on('bancoSaldoAtualizado', handleBancoUpdate);
+    console.log('Dashboard: Event listener registrado para bancoSaldoAtualizado');
 
     return () => {
       eventBus.off('bancoSaldoAtualizado', handleBancoUpdate);
+      console.log('Dashboard: Event listener removido');
     };
-  }, [bancoSelecionado]);
+  }, [bancoSelecionado]); // Dependência do banco selecionado
 
-  // Novo useEffect para atualizar saldo quando bancos mudam
+  // Atualizar saldo quando bancos ou seleção mudam
   useEffect(() => {
     if (bancoSelecionado && bancos.length > 0) {
       const banco = bancos.find(b => b.id === bancoSelecionado);
       if (banco) {
         setSaldoBanco(banco.saldo);
-        console.log(`Dashboard: Saldo atualizado para banco ${banco.nome}: ${banco.saldo}`);
+        console.log(`Dashboard: Saldo sincronizado para banco ${banco.nome}: ${banco.saldo}`);
       }
     }
   }, [bancos, bancoSelecionado]);
