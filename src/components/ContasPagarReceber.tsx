@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -410,6 +411,10 @@ const ContasPagarReceber = () => {
       ));
 
       // Emitir evento para atualizar o Dashboard
+      console.log('ContasPagarReceber: Emitindo evento bancoSaldoAtualizado', { 
+        bancoId: baixaData.banco_id, 
+        novoSaldo: novoSaldo 
+      });
       eventBus.emit('bancoSaldoAtualizado', { 
         bancoId: baixaData.banco_id, 
         novoSaldo: novoSaldo 
@@ -518,16 +523,24 @@ const ContasPagarReceber = () => {
         return;
       }
 
-      // Atualizar estados locais
+      // Atualizar estados locais PRIMEIRO
       setBancos(prev => prev.map(b => 
         b.id === baixa.banco_id ? { ...b, saldo: novoSaldo } : b
       ));
 
       // Emitir evento para atualizar o Dashboard IMEDIATAMENTE
-      eventBus.emit('bancoSaldoAtualizado', { 
+      console.log('ContasPagarReceber: Emitindo evento bancoSaldoAtualizado após desfazer baixa', { 
         bancoId: baixa.banco_id, 
         novoSaldo: novoSaldo 
       });
+      
+      // Usar setTimeout para garantir que o evento seja emitido após o estado local ser atualizado
+      setTimeout(() => {
+        eventBus.emit('bancoSaldoAtualizado', { 
+          bancoId: baixa.banco_id, 
+          novoSaldo: novoSaldo 
+        });
+      }, 100);
 
       console.log(`Estados locais atualizados. Novo saldo do banco ${banco.nome}: ${novoSaldo}`);
 

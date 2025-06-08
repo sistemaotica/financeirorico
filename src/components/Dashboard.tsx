@@ -42,11 +42,21 @@ const Dashboard = () => {
     // Escutar eventos de atualização de banco
     const handleBancoUpdate = (data: { bancoId: string; novoSaldo: number }) => {
       console.log('Dashboard: Recebido evento de atualização de banco:', data);
-      setBancos(prev => prev.map(banco => 
-        banco.id === data.bancoId 
-          ? { ...banco, saldo: data.novoSaldo } 
-          : banco
-      ));
+      setBancos(prev => {
+        const bancosAtualizados = prev.map(banco => 
+          banco.id === data.bancoId 
+            ? { ...banco, saldo: data.novoSaldo } 
+            : banco
+        );
+        console.log('Dashboard: Bancos atualizados:', bancosAtualizados);
+        return bancosAtualizados;
+      });
+      
+      // Forçar atualização do saldo se for o banco selecionado
+      if (data.bancoId === bancoSelecionado) {
+        console.log('Dashboard: Atualizando saldo do banco selecionado:', data.novoSaldo);
+        setSaldoBanco(data.novoSaldo);
+      }
     };
 
     eventBus.on('bancoSaldoAtualizado', handleBancoUpdate);
@@ -60,7 +70,7 @@ const Dashboard = () => {
       eventBus.off('bancoSaldoAtualizado', handleBancoUpdate);
       clearInterval(interval);
     };
-  }, []);
+  }, [bancoSelecionado]);
 
   useEffect(() => {
     if (bancoSelecionado) {
