@@ -37,6 +37,13 @@ const Dashboard = () => {
   useEffect(() => {
     carregarBancos();
     carregarContasAtrasadas();
+    
+    // Configurar atualização automática dos bancos a cada 5 segundos
+    const interval = setInterval(() => {
+      carregarBancos();
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -48,6 +55,7 @@ const Dashboard = () => {
   }, [bancoSelecionado, bancos]);
 
   const carregarBancos = async () => {
+    console.log('Dashboard: Carregando bancos...');
     const { data, error } = await supabase
       .from('bancos')
       .select('*')
@@ -55,10 +63,13 @@ const Dashboard = () => {
       .order('nome');
 
     if (!error && data) {
+      console.log('Dashboard: Bancos carregados:', data);
       setBancos(data);
       if (data.length > 0 && !bancoSelecionado) {
         setBancoSelecionado(data[0].id);
       }
+    } else if (error) {
+      console.error('Dashboard: Erro ao carregar bancos:', error);
     }
   };
 
