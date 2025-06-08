@@ -40,10 +40,10 @@ const Dashboard = () => {
     carregarContasAtrasadas();
   }, []);
 
-  // Configurar listener de eventos separadamente
+  // Configurar listener de eventos com dependência atualizada
   useEffect(() => {
     const handleBancoUpdate = (data: { bancoId: string; novoSaldo: number }) => {
-      console.log('Dashboard: Recebido evento de atualização de banco IMEDIATAMENTE:', data);
+      console.log('Dashboard: Recebido evento de atualização de banco:', data);
       
       // Atualizar o array de bancos IMEDIATAMENTE
       setBancos(prevBancos => {
@@ -71,7 +71,7 @@ const Dashboard = () => {
       eventBus.off('bancoSaldoAtualizado', handleBancoUpdate);
       console.log('Dashboard: Event listener removido');
     };
-  }, [bancoSelecionado]); // Dependência do banco selecionado
+  }, [bancoSelecionado]);
 
   // Atualizar saldo quando bancos ou seleção mudam
   useEffect(() => {

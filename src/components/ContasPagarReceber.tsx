@@ -466,13 +466,13 @@ const ContasPagarReceber = () => {
         console.log(`Cliente: Saldo atual ${banco.saldo} - baixa ${baixa.valor} = novo saldo ${novoSaldo}`);
       }
 
-      // PRIMEIRO: Atualizar estado local IMEDIATAMENTE
+      // 1. Atualizar estado local IMEDIATAMENTE
       setBancos(prev => prev.map(b => 
         b.id === baixa.banco_id ? { ...b, saldo: novoSaldo } : b
       ));
 
-      // SEGUNDO: Emitir evento IMEDIATAMENTE para o Dashboard
-      console.log('ContasPagarReceber: Emitindo evento bancoSaldoAtualizado IMEDIATAMENTE ao desfazer baixa', { 
+      // 2. Emitir evento IMEDIATAMENTE para o Dashboard
+      console.log('ContasPagarReceber: Emitindo evento bancoSaldoAtualizado IMEDIATAMENTE', { 
         bancoId: baixa.banco_id, 
         novoSaldo: novoSaldo 
       });
@@ -481,7 +481,7 @@ const ContasPagarReceber = () => {
         novoSaldo: novoSaldo 
       });
 
-      // TERCEIRO: Atualizar saldo do banco no database
+      // 3. Atualizar saldo do banco no database
       const { error: bancoError } = await supabase
         .from('bancos')
         .update({ saldo: novoSaldo })
@@ -508,9 +508,7 @@ const ContasPagarReceber = () => {
         return;
       }
 
-      console.log(`Saldo do banco ${banco.nome} atualizado de ${banco.saldo} para ${novoSaldo}`);
-
-      // Remover a baixa específica
+      // 4. Remover a baixa específica
       const { error: deleteBaixaError } = await supabase
         .from('baixas_contas')
         .delete()
@@ -526,11 +524,11 @@ const ContasPagarReceber = () => {
         return;
       }
 
-      // Recalcular o valor_baixa da conta
+      // 5. Recalcular o valor_baixa da conta
       const baixasRestantes = baixasContas.filter(b => b.conta_id === baixa.conta_id && b.id !== baixa.id);
       const novoValorBaixa = baixasRestantes.reduce((total, b) => total + b.valor, 0);
 
-      // Atualizar a conta com o novo valor_baixa e status
+      // 6. Atualizar a conta com o novo valor_baixa e status
       const { error: updateContaError } = await supabase
         .from('contas')
         .update({
@@ -548,8 +546,6 @@ const ContasPagarReceber = () => {
         });
         return;
       }
-
-      console.log(`Estados locais atualizados. Novo saldo do banco ${banco.nome}: ${novoSaldo}`);
 
       toast({
         title: "Sucesso",
