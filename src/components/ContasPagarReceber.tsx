@@ -432,15 +432,13 @@ const ContasPagarReceber = () => {
         return;
       }
 
-      // Calcular o novo saldo do banco
+      // Para fornecedores (contas a pagar), ao desfazer a baixa, devemos SOMAR o valor de volta ao banco
+      // Para clientes (contas a receber), ao desfazer a baixa, devemos SUBTRAIR o valor do banco
       let novoSaldo: number;
       
-      // CORREÇÃO: Para fornecedores (contas a pagar), ao desfazer a baixa, 
-      // devemos SOMAR o valor de volta ao banco (pois a baixa original havia subtraído)
-      // Para clientes (contas a receber), ao desfazer a baixa,
-      // devemos SUBTRAIR o valor do banco (pois a baixa original havia somado)
       if (conta.destino_tipo === 'fornecedor') {
         novoSaldo = banco.saldo + baixa.valor;  // Soma de volta para fornecedores
+        console.log(`Fornecedor: Saldo atual ${banco.saldo} + baixa ${baixa.valor} = novo saldo ${novoSaldo}`);
       } else {
         novoSaldo = banco.saldo - baixa.valor;  // Subtrai para clientes
         
@@ -453,15 +451,17 @@ const ContasPagarReceber = () => {
           });
           return;
         }
+        console.log(`Cliente: Saldo atual ${banco.saldo} - baixa ${baixa.valor} = novo saldo ${novoSaldo}`);
       }
 
-      // Atualizar saldo do banco
+      // Primeiro, atualizar saldo do banco
       const { error: bancoError } = await supabase
         .from('bancos')
         .update({ saldo: novoSaldo })
         .eq('id', baixa.banco_id);
 
       if (bancoError) {
+        console.error('Erro ao atualizar banco:', bancoError);
         toast({
           title: "Erro",
           description: "Erro ao atualizar saldo do banco",
@@ -470,6 +470,8 @@ const ContasPagarReceber = () => {
         return;
       }
 
+      console.log(`Saldo do banco ${banco.nome} atualizado de ${banco.saldo} para ${novoSaldo}`);
+
       // Remover a baixa específica
       const { error: deleteBaixaError } = await supabase
         .from('baixas_contas')
@@ -477,6 +479,7 @@ const ContasPagarReceber = () => {
         .eq('id', baixa.id);
 
       if (deleteBaixaError) {
+        console.error('Erro ao remover baixa:', deleteBaixaError);
         toast({
           title: "Erro",
           description: "Erro ao remover baixa",
@@ -499,6 +502,7 @@ const ContasPagarReceber = () => {
         .eq('id', conta.id);
 
       if (updateContaError) {
+        console.error('Erro ao atualizar conta:', updateContaError);
         toast({
           title: "Erro",
           description: "Erro ao atualizar conta",
@@ -507,18 +511,22 @@ const ContasPagarReceber = () => {
         return;
       }
 
-      // Atualizar estados locais
+      // Atualizar estados locais FORÇADAMENTE
       setBancos(prev => prev.map(b => 
         b.id === baixa.banco_id ? { ...b, saldo: novoSaldo } : b
       ));
 
+      console.log(`Estados locais atualizados. Novo saldo do banco ${banco.nome}: ${novoSaldo}`);
+
       toast({
         title: "Sucesso",
-        description: `Baixa de R$ ${baixa.valor.toFixed(2)} foi desfeita. Saldo do ${banco.nome} ajustado.`
+        description: `Baixa de R$ ${baixa.valor.toFixed(2)} foi desfeita. Saldo do ${banco.nome} atualizado para R$ ${novoSaldo.toFixed(2)}.`
       });
       
-      carregarContas();
-      carregarBaixasContas();
+      // Recarregar dados para garantir sincronização
+      await carregarContas();
+      await carregarBaixasContas();
+      await carregarBancos(); // Força o recarregamento dos bancos
     }
   };
 

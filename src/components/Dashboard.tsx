@@ -43,6 +43,7 @@ const Dashboard = () => {
     if (bancoSelecionado) {
       const banco = bancos.find(b => b.id === bancoSelecionado);
       setSaldoBanco(banco?.saldo || 0);
+      console.log(`Dashboard: Saldo atualizado para banco ${banco?.nome}: ${banco?.saldo}`);
     }
   }, [bancoSelecionado, bancos]);
 
