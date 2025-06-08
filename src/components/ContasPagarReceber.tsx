@@ -466,6 +466,21 @@ const ContasPagarReceber = () => {
         console.log(`Cliente: Saldo atual ${banco.saldo} - baixa ${baixa.valor} = novo saldo ${novoSaldo}`);
       }
 
+      // EMITIR EVENTO IMEDIATAMENTE ANTES DE QUALQUER OPERAÇÃO NO BANCO
+      console.log('ContasPagarReceber: Emitindo evento bancoSaldoAtualizado IMEDIATAMENTE', { 
+        bancoId: baixa.banco_id, 
+        novoSaldo: novoSaldo 
+      });
+      eventBus.emit('bancoSaldoAtualizado', { 
+        bancoId: baixa.banco_id, 
+        novoSaldo: novoSaldo 
+      });
+
+      // Atualizar estado local IMEDIATAMENTE
+      setBancos(prev => prev.map(b => 
+        b.id === baixa.banco_id ? { ...b, saldo: novoSaldo } : b
+      ));
+
       // Primeiro, atualizar saldo do banco
       const { error: bancoError } = await supabase
         .from('bancos')
@@ -478,6 +493,17 @@ const ContasPagarReceber = () => {
           title: "Erro",
           description: "Erro ao atualizar saldo do banco",
           variant: "destructive"
+        });
+        
+        // Reverter estado local em caso de erro
+        setBancos(prev => prev.map(b => 
+          b.id === baixa.banco_id ? { ...b, saldo: banco.saldo } : b
+        ));
+        
+        // Reverter evento
+        eventBus.emit('bancoSaldoAtualizado', { 
+          bancoId: baixa.banco_id, 
+          novoSaldo: banco.saldo 
         });
         return;
       }
@@ -522,25 +548,6 @@ const ContasPagarReceber = () => {
         });
         return;
       }
-
-      // Atualizar estados locais PRIMEIRO
-      setBancos(prev => prev.map(b => 
-        b.id === baixa.banco_id ? { ...b, saldo: novoSaldo } : b
-      ));
-
-      // Emitir evento para atualizar o Dashboard IMEDIATAMENTE
-      console.log('ContasPagarReceber: Emitindo evento bancoSaldoAtualizado após desfazer baixa', { 
-        bancoId: baixa.banco_id, 
-        novoSaldo: novoSaldo 
-      });
-      
-      // Usar setTimeout para garantir que o evento seja emitido após o estado local ser atualizado
-      setTimeout(() => {
-        eventBus.emit('bancoSaldoAtualizado', { 
-          bancoId: baixa.banco_id, 
-          novoSaldo: novoSaldo 
-        });
-      }, 100);
 
       console.log(`Estados locais atualizados. Novo saldo do banco ${banco.nome}: ${novoSaldo}`);
 

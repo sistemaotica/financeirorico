@@ -42,6 +42,8 @@ const Dashboard = () => {
     // Escutar eventos de atualização de banco
     const handleBancoUpdate = (data: { bancoId: string; novoSaldo: number }) => {
       console.log('Dashboard: Recebido evento de atualização de banco:', data);
+      
+      // Atualizar IMEDIATAMENTE o estado dos bancos
       setBancos(prev => {
         const bancosAtualizados = prev.map(banco => 
           banco.id === data.bancoId 
@@ -52,33 +54,30 @@ const Dashboard = () => {
         return bancosAtualizados;
       });
       
-      // Forçar atualização do saldo se for o banco selecionado
+      // Atualizar IMEDIATAMENTE o saldo se for o banco selecionado
       if (data.bancoId === bancoSelecionado) {
-        console.log('Dashboard: Atualizando saldo do banco selecionado:', data.novoSaldo);
+        console.log('Dashboard: Atualizando saldo do banco selecionado IMEDIATAMENTE:', data.novoSaldo);
         setSaldoBanco(data.novoSaldo);
       }
     };
 
     eventBus.on('bancoSaldoAtualizado', handleBancoUpdate);
 
-    // Configurar atualização automática dos bancos a cada 10 segundos como backup
-    const interval = setInterval(() => {
-      carregarBancos();
-    }, 10000);
-
     return () => {
       eventBus.off('bancoSaldoAtualizado', handleBancoUpdate);
-      clearInterval(interval);
     };
   }, [bancoSelecionado]);
 
+  // Novo useEffect para atualizar saldo quando bancos mudam
   useEffect(() => {
-    if (bancoSelecionado) {
+    if (bancoSelecionado && bancos.length > 0) {
       const banco = bancos.find(b => b.id === bancoSelecionado);
-      setSaldoBanco(banco?.saldo || 0);
-      console.log(`Dashboard: Saldo atualizado para banco ${banco?.nome}: ${banco?.saldo}`);
+      if (banco) {
+        setSaldoBanco(banco.saldo);
+        console.log(`Dashboard: Saldo atualizado para banco ${banco.nome}: ${banco.saldo}`);
+      }
     }
-  }, [bancoSelecionado, bancos]);
+  }, [bancos, bancoSelecionado]);
 
   const carregarBancos = async () => {
     console.log('Dashboard: Carregando bancos...');
