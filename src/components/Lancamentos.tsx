@@ -142,41 +142,6 @@ const Lancamentos = () => {
     }
   };
 
-  const handleEdit = (lancamento: Lancamento) => {
-    setSelectedLancamento(lancamento);
-    setEditDialogOpen(true);
-  };
-
-  const handleSaveEdit = async (lancamento: Lancamento) => {
-    const { error } = await supabase
-      .from('lancamentos')
-      .update({
-        data: lancamento.data,
-        banco_id: lancamento.banco_id,
-        tipo: lancamento.tipo,
-        descricao: lancamento.descricao,
-        valor: lancamento.valor,
-        numero_nota_fiscal: lancamento.numero_nota_fiscal
-      })
-      .eq('id', lancamento.id);
-
-    if (error) {
-      toast({
-        title: "Erro",
-        description: "Erro ao atualizar lançamento",
-        variant: "destructive"
-      });
-    } else {
-      toast({
-        title: "Sucesso",
-        description: "Lançamento atualizado com sucesso"
-      });
-      setEditDialogOpen(false);
-      carregarLancamentos();
-      carregarBancos();
-    }
-  };
-
   const handleDelete = async (id: string) => {
     if (confirm('Tem certeza que deseja excluir este lançamento?')) {
       const { error } = await supabase
@@ -333,13 +298,6 @@ const Lancamentos = () => {
                       <div className="flex space-x-1">
                         <Button
                           size="sm"
-                          variant="outline"
-                          onClick={() => handleEdit(lancamento)}
-                        >
-                          Editar
-                        </Button>
-                        <Button
-                          size="sm"
                           variant="destructive"
                           onClick={() => handleDelete(lancamento.id)}
                         >
@@ -354,14 +312,6 @@ const Lancamentos = () => {
           </div>
         </CardContent>
       </Card>
-
-      <EditLancamentoDialog
-        open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
-        lancamento={selectedLancamento}
-        bancos={bancos}
-        onSave={handleSaveEdit}
-      />
     </div>
   );
 };

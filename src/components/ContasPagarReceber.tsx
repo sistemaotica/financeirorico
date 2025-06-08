@@ -432,25 +432,27 @@ const ContasPagarReceber = () => {
         return;
       }
 
-      // Calcular o novo saldo do banco (reverso da operação original)
+      // Calcular o novo saldo do banco
       let novoSaldo: number;
       
-      // Se a conta é de fornecedor (pagar), a baixa original diminuía o saldo, então ao desfazer, soma de volta
-      // Se a conta é de cliente (receber), a baixa original aumentava o saldo, então ao desfazer, subtrai de volta
+      // CORREÇÃO: Para fornecedores (contas a pagar), ao desfazer a baixa, 
+      // devemos SOMAR o valor de volta ao banco (pois a baixa original havia subtraído)
+      // Para clientes (contas a receber), ao desfazer a baixa,
+      // devemos SUBTRAIR o valor do banco (pois a baixa original havia somado)
       if (conta.destino_tipo === 'fornecedor') {
-        novoSaldo = banco.saldo + baixa.valor;
+        novoSaldo = banco.saldo + baixa.valor;  // Soma de volta para fornecedores
       } else {
-        novoSaldo = banco.saldo - baixa.valor;
-      }
-
-      // Verificar se o banco tem saldo suficiente (no caso de débito)
-      if (conta.destino_tipo === 'cliente' && novoSaldo < 0) {
-        toast({
-          title: "Erro",
-          description: "Saldo insuficiente no banco para realizar o estorno",
-          variant: "destructive"
-        });
-        return;
+        novoSaldo = banco.saldo - baixa.valor;  // Subtrai para clientes
+        
+        // Verificar se o banco tem saldo suficiente (no caso de débito para clientes)
+        if (novoSaldo < 0) {
+          toast({
+            title: "Erro",
+            description: "Saldo insuficiente no banco para realizar o estorno",
+            variant: "destructive"
+          });
+          return;
+        }
       }
 
       // Atualizar saldo do banco
