@@ -52,7 +52,7 @@ const AppSidebar = ({ currentPage, onNavigate, onLogout }: AppSidebarProps) => {
       title: "Relatório", 
       icon: BarChart3,
       items: [
-        { title: "Contas a Pagar/Receber", page: "relatorio-contas", icon: Receipt },
+        { title: "Contas", page: "relatorio-contas", icon: Receipt },
         { title: "Extrato do Movimento", page: "extrato", icon: FileText },
       ],
     },
