@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { ArrowDown, ArrowUp, Wallet, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { eventBus } from '@/utils/eventBus';
 
 interface Banco {
   id: string;
@@ -38,12 +39,27 @@ const Dashboard = () => {
     carregarBancos();
     carregarContasAtrasadas();
     
-    // Configurar atualização automática dos bancos a cada 5 segundos
+    // Escutar eventos de atualização de banco
+    const handleBancoUpdate = (data: { bancoId: string; novoSaldo: number }) => {
+      console.log('Dashboard: Recebido evento de atualização de banco:', data);
+      setBancos(prev => prev.map(banco => 
+        banco.id === data.bancoId 
+          ? { ...banco, saldo: data.novoSaldo } 
+          : banco
+      ));
+    };
+
+    eventBus.on('bancoSaldoAtualizado', handleBancoUpdate);
+
+    // Configurar atualização automática dos bancos a cada 10 segundos como backup
     const interval = setInterval(() => {
       carregarBancos();
-    }, 5000);
+    }, 10000);
 
-    return () => clearInterval(interval);
+    return () => {
+      eventBus.off('bancoSaldoAtualizado', handleBancoUpdate);
+      clearInterval(interval);
+    };
   }, []);
 
   useEffect(() => {

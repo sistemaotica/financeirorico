@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Undo } from 'lucide-react';
 import BaixaContaDialog from './dialogs/BaixaContaDialog';
 import EditContaDialog from './dialogs/EditContaDialog';
+import { eventBus } from '@/utils/eventBus';
 
 interface Cliente {
   id: string;
@@ -407,6 +408,12 @@ const ContasPagarReceber = () => {
       setBancos(prev => prev.map(b => 
         b.id === baixaData.banco_id ? { ...b, saldo: novoSaldo } : b
       ));
+
+      // Emitir evento para atualizar o Dashboard
+      eventBus.emit('bancoSaldoAtualizado', { 
+        bancoId: baixaData.banco_id, 
+        novoSaldo: novoSaldo 
+      });
     }
 
     toast({
@@ -511,10 +518,16 @@ const ContasPagarReceber = () => {
         return;
       }
 
-      // Atualizar estados locais FORÇADAMENTE
+      // Atualizar estados locais
       setBancos(prev => prev.map(b => 
         b.id === baixa.banco_id ? { ...b, saldo: novoSaldo } : b
       ));
+
+      // Emitir evento para atualizar o Dashboard IMEDIATAMENTE
+      eventBus.emit('bancoSaldoAtualizado', { 
+        bancoId: baixa.banco_id, 
+        novoSaldo: novoSaldo 
+      });
 
       console.log(`Estados locais atualizados. Novo saldo do banco ${banco.nome}: ${novoSaldo}`);
 
@@ -526,7 +539,6 @@ const ContasPagarReceber = () => {
       // Recarregar dados para garantir sincronização
       await carregarContas();
       await carregarBaixasContas();
-      await carregarBancos(); // Força o recarregamento dos bancos
     }
   };
 
