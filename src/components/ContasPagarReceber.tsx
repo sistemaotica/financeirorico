@@ -443,16 +443,16 @@ const ContasPagarReceber = () => {
         return;
       }
 
-      // Calcular o novo saldo - LÓGICA CORRIGIDA
+      // Calcular o novo saldo - LÓGICA DE REVERSÃO CORRIGIDA
       let novoSaldo: number;
       
-      // LÓGICA CORRETA DE REVERSÃO:
-      // Para FORNECEDORES (contas a pagar): ao desfazer baixa, SOMA de volta ao banco
-      // Para CLIENTES (contas a receber): ao desfazer baixa, SUBTRAI do banco
+      // LÓGICA CORRETA DE REVERSÃO PARA DESFAZER BAIXA:
+      // Para FORNECEDORES (contas a pagar): ao desfazer baixa, SOMA de volta ao banco (reverte o pagamento)
+      // Para CLIENTES (contas a receber): ao desfazer baixa, SUBTRAI do banco (reverte o recebimento)
       if (conta.destino_tipo === 'fornecedor') {
         // Conta de fornecedor: ao desfazer, SOMA o valor de volta (reverter o pagamento)
         novoSaldo = banco.saldo + baixa.valor;
-        console.log(`Fornecedor - Desfazendo baixa: Saldo atual ${banco.saldo} + baixa ${baixa.valor} = novo saldo ${novoSaldo}`);
+        console.log(`DESFAZER BAIXA FORNECEDOR: Saldo atual ${banco.saldo} + baixa ${baixa.valor} = novo saldo ${novoSaldo}`);
       } else {
         // Conta de cliente: ao desfazer, SUBTRAI o valor (reverter o recebimento)
         novoSaldo = banco.saldo - baixa.valor;
@@ -466,16 +466,16 @@ const ContasPagarReceber = () => {
           });
           return;
         }
-        console.log(`Cliente - Desfazendo baixa: Saldo atual ${banco.saldo} - baixa ${baixa.valor} = novo saldo ${novoSaldo}`);
+        console.log(`DESFAZER BAIXA CLIENTE: Saldo atual ${banco.saldo} - baixa ${baixa.valor} = novo saldo ${novoSaldo}`);
       }
 
-      // 1. Atualizar estado local IMEDIATAMENTE
+      // 1. PRIMEIRO: Atualizar estado local IMEDIATAMENTE para reflexo instantâneo no Dashboard
       setBancos(prev => prev.map(b => 
         b.id === baixa.banco_id ? { ...b, saldo: novoSaldo } : b
       ));
 
-      // 2. Emitir evento IMEDIATAMENTE para o Dashboard
-      console.log('ContasPagarReceber: Emitindo evento bancoSaldoAtualizado IMEDIATAMENTE', { 
+      // 2. SEGUNDO: Emitir evento IMEDIATAMENTE para o Dashboard
+      console.log('ContasPagarReceber: Emitindo evento bancoSaldoAtualizado IMEDIATAMENTE para Dashboard', { 
         bancoId: baixa.banco_id, 
         novoSaldo: novoSaldo 
       });
@@ -484,7 +484,7 @@ const ContasPagarReceber = () => {
         novoSaldo: novoSaldo 
       });
 
-      // 3. Atualizar saldo do banco no database
+      // 3. TERCEIRO: Atualizar saldo do banco no banco de dados
       const { error: bancoError } = await supabase
         .from('bancos')
         .update({ saldo: novoSaldo })
@@ -511,7 +511,7 @@ const ContasPagarReceber = () => {
         return;
       }
 
-      // 4. Remover a baixa específica
+      // 4. QUARTO: Remover a baixa específica
       const { error: deleteBaixaError } = await supabase
         .from('baixas_contas')
         .delete()
@@ -527,11 +527,11 @@ const ContasPagarReceber = () => {
         return;
       }
 
-      // 5. Recalcular o valor_baixa da conta
+      // 5. QUINTO: Recalcular o valor_baixa da conta
       const baixasRestantes = baixasContas.filter(b => b.conta_id === baixa.conta_id && b.id !== baixa.id);
       const novoValorBaixa = baixasRestantes.reduce((total, b) => total + b.valor, 0);
 
-      // 6. Atualizar a conta com o novo valor_baixa e status
+      // 6. SEXTO: Atualizar a conta com o novo valor_baixa e status
       const { error: updateContaError } = await supabase
         .from('contas')
         .update({
@@ -552,7 +552,7 @@ const ContasPagarReceber = () => {
 
       toast({
         title: "Sucesso",
-        description: `Baixa de R$ ${baixa.valor.toFixed(2)} foi desfeita. Saldo do ${banco.nome} atualizado para R$ ${novoSaldo.toFixed(2)}.`
+        description: `Baixa de R$ ${baixa.valor.toFixed(2)} foi desfeita. Saldo do ${banco.nome} atualizado IMEDIATAMENTE para R$ ${novoSaldo.toFixed(2)}.`
       });
       
       // Recarregar dados para garantir sincronização

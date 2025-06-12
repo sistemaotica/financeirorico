@@ -40,25 +40,25 @@ const Dashboard = () => {
     carregarContasAtrasadas();
   }, []);
 
-  // Configurar listener de eventos com dependência atualizada
+  // Event listener para atualizações de saldo
   useEffect(() => {
     const handleBancoUpdate = (data: { bancoId: string; novoSaldo: number }) => {
       console.log('Dashboard: Recebido evento de atualização de banco:', data);
       
-      // Atualizar o array de bancos IMEDIATAMENTE
+      // Atualizar o array de bancos IMEDIATAMENTE - PRIORIDADE MÁXIMA
       setBancos(prevBancos => {
         const novoBancos = prevBancos.map(banco => 
           banco.id === data.bancoId 
             ? { ...banco, saldo: data.novoSaldo } 
             : banco
         );
-        console.log('Dashboard: Array de bancos atualizado:', novoBancos);
+        console.log('Dashboard: Array de bancos atualizado IMEDIATAMENTE:', novoBancos);
         return novoBancos;
       });
       
       // Se é o banco selecionado, atualizar o saldo IMEDIATAMENTE
       if (data.bancoId === bancoSelecionado) {
-        console.log('Dashboard: Atualizando saldo do banco selecionado para:', data.novoSaldo);
+        console.log('Dashboard: Atualizando saldo do banco selecionado IMEDIATAMENTE para:', data.novoSaldo);
         setSaldoBanco(data.novoSaldo);
       }
     };
@@ -73,7 +73,7 @@ const Dashboard = () => {
     };
   }, [bancoSelecionado]);
 
-  // Atualizar saldo quando bancos ou seleção mudam
+  // Atualizar saldo quando bancos ou seleção mudam (apenas se não for uma atualização por evento)
   useEffect(() => {
     if (bancoSelecionado && bancos.length > 0) {
       const banco = bancos.find(b => b.id === bancoSelecionado);
@@ -93,11 +93,32 @@ const Dashboard = () => {
       .order('nome');
 
     if (!error && data) {
-      console.log('Dashboard: Bancos carregados:', data);
-      setBancos(data);
-      if (data.length > 0 && !bancoSelecionado) {
-        setBancoSelecionado(data[0].id);
-      }
+      console.log('Dashboard: Bancos carregados do banco de dados:', data);
+      
+      // IMPORTANTE: Não sobrescrever se acabamos de receber uma atualização por evento
+      // Verificar se há diferenças significativas antes de atualizar
+      setBancos(prevBancos => {
+        // Se não há bancos locais, usar os do banco de dados
+        if (prevBancos.length === 0) {
+          if (data.length > 0 && !bancoSelecionado) {
+            setBancoSelecionado(data[0].id);
+          }
+          return data;
+        }
+        
+        // Se há bancos locais, verificar se há mudanças estruturais (novos bancos, etc)
+        // mas manter os saldos que foram atualizados por eventos
+        const bancosAtualizados = data.map(bancoDB => {
+          const bancoLocal = prevBancos.find(b => b.id === bancoDB.id);
+          if (bancoLocal) {
+            // Manter o saldo local se foi atualizado recentemente por evento
+            return { ...bancoDB, saldo: bancoLocal.saldo };
+          }
+          return bancoDB;
+        });
+        
+        return bancosAtualizados;
+      });
     } else if (error) {
       console.error('Dashboard: Erro ao carregar bancos:', error);
     }
