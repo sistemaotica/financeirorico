@@ -67,7 +67,7 @@ const RelatorioContas = () => {
   };
 
   const gerarPDF = (contasFiltradas: Conta[]) => {
-    // Criar HTML para o relatório
+    // Criar HTML para o relatório com design moderno
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -75,68 +75,331 @@ const RelatorioContas = () => {
           <meta charset="utf-8">
           <title>Relatório de Contas</title>
           <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            .header { text-align: center; margin-bottom: 30px; }
-            .header h1 { color: #333; margin-bottom: 10px; }
-            .filters { background: #f5f5f5; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
-            .filters h3 { margin-top: 0; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 12px; }
-            th { background-color: #f2f2f2; font-weight: bold; }
-            .total { font-weight: bold; background-color: #e8f4f8; }
-            .text-right { text-align: right; }
+            @page {
+              size: A4 landscape;
+              margin: 15mm;
+            }
+            
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+            
+            body { 
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+              color: #2d3748;
+              line-height: 1.4;
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              min-height: 100vh;
+            }
+            
+            .container {
+              background: white;
+              border-radius: 12px;
+              box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+              padding: 30px;
+              margin: 20px auto;
+              max-width: 100%;
+            }
+            
+            .header {
+              text-align: center;
+              margin-bottom: 30px;
+              border-bottom: 3px solid #4299e1;
+              padding-bottom: 20px;
+            }
+            
+            .header h1 {
+              color: #2b6cb0;
+              font-size: 32px;
+              font-weight: 700;
+              margin-bottom: 8px;
+              text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            
+            .header .subtitle {
+              color: #718096;
+              font-size: 16px;
+              font-weight: 500;
+            }
+            
+            .filters {
+              background: linear-gradient(135deg, #ebf8ff 0%, #e6fffa 100%);
+              border: 1px solid #bee3f8;
+              border-radius: 12px;
+              padding: 20px;
+              margin-bottom: 25px;
+              box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            }
+            
+            .filters h3 {
+              color: #2c5282;
+              font-size: 18px;
+              font-weight: 600;
+              margin-bottom: 15px;
+              display: flex;
+              align-items: center;
+            }
+            
+            .filters h3:before {
+              content: "🔍";
+              margin-right: 8px;
+              font-size: 16px;
+            }
+            
+            .filter-grid {
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+              gap: 15px;
+            }
+            
+            .filter-item {
+              background: white;
+              padding: 12px;
+              border-radius: 8px;
+              border-left: 4px solid #4299e1;
+            }
+            
+            .filter-label {
+              font-weight: 600;
+              color: #2d3748;
+              font-size: 14px;
+            }
+            
+            .filter-value {
+              color: #4a5568;
+              font-size: 14px;
+              margin-top: 4px;
+            }
+            
+            .table-container {
+              background: white;
+              border-radius: 12px;
+              overflow: hidden;
+              box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            }
+            
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              font-size: 12px;
+            }
+            
+            th {
+              background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+              color: white;
+              padding: 15px 12px;
+              text-align: left;
+              font-weight: 600;
+              font-size: 13px;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+            }
+            
+            th:first-child {
+              border-top-left-radius: 12px;
+            }
+            
+            th:last-child {
+              border-top-right-radius: 12px;
+            }
+            
+            td {
+              padding: 12px;
+              border-bottom: 1px solid #e2e8f0;
+              font-size: 12px;
+            }
+            
+            tr:nth-child(even) {
+              background-color: #f7fafc;
+            }
+            
+            tr:hover {
+              background-color: #edf2f7;
+            }
+            
+            .text-right {
+              text-align: right;
+              font-weight: 600;
+            }
+            
+            .valor-positivo {
+              color: #38a169;
+            }
+            
+            .valor-negativo {
+              color: #e53e3e;
+            }
+            
+            .total-row {
+              background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%) !important;
+              color: white !important;
+              font-weight: 700;
+              font-size: 14px;
+            }
+            
+            .total-row td {
+              border-bottom: none;
+              padding: 18px 12px;
+            }
+            
+            .summary-cards {
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 20px;
+              margin-top: 25px;
+            }
+            
+            .summary-card {
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              color: white;
+              padding: 20px;
+              border-radius: 12px;
+              text-align: center;
+              box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            }
+            
+            .summary-card h4 {
+              font-size: 14px;
+              font-weight: 600;
+              margin-bottom: 8px;
+              opacity: 0.9;
+            }
+            
+            .summary-card .value {
+              font-size: 24px;
+              font-weight: 700;
+            }
+            
+            .status-badge {
+              display: inline-block;
+              padding: 4px 8px;
+              border-radius: 6px;
+              font-size: 11px;
+              font-weight: 600;
+              text-transform: uppercase;
+            }
+            
+            .status-aberto {
+              background-color: #fed7d7;
+              color: #c53030;
+            }
+            
+            .status-pago {
+              background-color: #c6f6d5;
+              color: #2f855a;
+            }
+            
+            @media print {
+              body {
+                background: white !important;
+              }
+              .container {
+                box-shadow: none;
+                margin: 0;
+                padding: 15px;
+              }
+            }
           </style>
         </head>
         <body>
-          <div class="header">
-            <h1>Relatório de Contas</h1>
-            <p>Gerado em: ${new Date().toLocaleDateString('pt-BR')}</p>
-          </div>
-          
-          <div class="filters">
-            <h3>Filtros Aplicados:</h3>
-            <p><strong>Tipo:</strong> ${tipoRelatorio === 'pagar' ? 'Contas a Pagar' : tipoRelatorio === 'receber' ? 'Contas a Receber' : 'Todas'}</p>
-            <p><strong>Status:</strong> ${statusRelatorio === 'aberto' ? 'Em Aberto' : statusRelatorio === 'baixadas' ? 'Baixadas' : 'Todas'}</p>
-            <p><strong>Período:</strong> ${dataInicio && dataFim ? `${new Date(dataInicio).toLocaleDateString('pt-BR')} a ${new Date(dataFim).toLocaleDateString('pt-BR')}` : 'Sem filtro'}</p>
-            <p><strong>Destino:</strong> ${tipoDestino ? (tipoDestino === 'cliente' ? 'Clientes' : 'Fornecedores') : 'Todos'}</p>
-          </div>
+          <div class="container">
+            <div class="header">
+              <h1>📊 Relatório de Contas</h1>
+              <div class="subtitle">Gerado em ${new Date().toLocaleDateString('pt-BR', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}</div>
+            </div>
+            
+            <div class="filters">
+              <h3>Filtros Aplicados</h3>
+              <div class="filter-grid">
+                <div class="filter-item">
+                  <div class="filter-label">Tipo de Conta</div>
+                  <div class="filter-value">${tipoRelatorio === 'pagar' ? '💰 Contas a Pagar' : tipoRelatorio === 'receber' ? '💳 Contas a Receber' : '📋 Todas'}</div>
+                </div>
+                <div class="filter-item">
+                  <div class="filter-label">Status</div>
+                  <div class="filter-value">${statusRelatorio === 'aberto' ? '🔓 Em Aberto' : statusRelatorio === 'baixadas' ? '✅ Baixadas' : '📊 Todas'}</div>
+                </div>
+                <div class="filter-item">
+                  <div class="filter-label">Período</div>
+                  <div class="filter-value">${dataInicio && dataFim ? `📅 ${new Date(dataInicio).toLocaleDateString('pt-BR')} a ${new Date(dataFim).toLocaleDateString('pt-BR')}` : '🗓️ Sem filtro'}</div>
+                </div>
+                <div class="filter-item">
+                  <div class="filter-label">Destino</div>
+                  <div class="filter-value">${tipoDestino ? (tipoDestino === 'cliente' ? '👥 Clientes' : '🏢 Fornecedores') : '🌐 Todos'}</div>
+                </div>
+              </div>
+            </div>
 
-          <table>
-            <thead>
-              <tr>
-                <th>Data Vencimento</th>
-                <th>Cliente/Fornecedor</th>
-                <th>Referência</th>
-                <th>Parcelas</th>
-                <th>Nº Nota</th>
-                <th>Valor Total</th>
-                <th>Valor Baixado</th>
-                <th>Saldo</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${contasFiltradas.map(conta => `
-                <tr>
-                  <td>${new Date(conta.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
-                  <td>${conta.destino_tipo === 'cliente' ? conta.clientes?.nome || 'N/A' : conta.fornecedores?.nome || 'N/A'}</td>
-                  <td>${conta.referencia}</td>
-                  <td>${conta.parcela_numero}/${conta.parcela_total}</td>
-                  <td>${conta.numero_nota || '-'}</td>
-                  <td class="text-right">R$ ${conta.valor.toFixed(2)}</td>
-                  <td class="text-right">R$ ${(conta.valor_baixa || 0).toFixed(2)}</td>
-                  <td class="text-right">R$ ${(conta.valor - (conta.valor_baixa || 0)).toFixed(2)}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-            <tfoot>
-              <tr class="total">
-                <td colspan="5"><strong>TOTAIS:</strong></td>
-                <td class="text-right"><strong>R$ ${contasFiltradas.reduce((sum, conta) => sum + conta.valor, 0).toFixed(2)}</strong></td>
-                <td class="text-right"><strong>R$ ${contasFiltradas.reduce((sum, conta) => sum + (conta.valor_baixa || 0), 0).toFixed(2)}</strong></td>
-                <td class="text-right"><strong>R$ ${contasFiltradas.reduce((sum, conta) => sum + (conta.valor - (conta.valor_baixa || 0)), 0).toFixed(2)}</strong></td>
-              </tr>
-            </tfoot>
-          </table>
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>📅 Vencimento</th>
+                    <th>👤 Cliente/Fornecedor</th>
+                    <th>📝 Referência</th>
+                    <th>🔢 Parcelas</th>
+                    <th>📄 Nº Nota</th>
+                    <th>💰 Valor Total</th>
+                    <th>✅ Valor Baixado</th>
+                    <th>📊 Saldo</th>
+                    <th>🏷️ Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${contasFiltradas.map(conta => {
+                    const saldo = conta.valor - (conta.valor_baixa || 0);
+                    const status = saldo > 0 ? 'aberto' : 'pago';
+                    return `
+                      <tr>
+                        <td>${new Date(conta.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
+                        <td><strong>${conta.destino_tipo === 'cliente' ? conta.clientes?.nome || 'N/A' : conta.fornecedores?.nome || 'N/A'}</strong></td>
+                        <td>${conta.referencia}</td>
+                        <td>${conta.parcela_numero}/${conta.parcela_total}</td>
+                        <td>${conta.numero_nota || '-'}</td>
+                        <td class="text-right">R$ ${conta.valor.toFixed(2).replace('.', ',')}</td>
+                        <td class="text-right valor-positivo">R$ ${(conta.valor_baixa || 0).toFixed(2).replace('.', ',')}</td>
+                        <td class="text-right ${saldo > 0 ? 'valor-negativo' : 'valor-positivo'}">R$ ${saldo.toFixed(2).replace('.', ',')}</td>
+                        <td><span class="status-badge status-${status}">${status === 'aberto' ? 'Em Aberto' : 'Pago'}</span></td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+                <tfoot>
+                  <tr class="total-row">
+                    <td colspan="5"><strong>🎯 TOTAIS GERAIS</strong></td>
+                    <td class="text-right"><strong>R$ ${contasFiltradas.reduce((sum, conta) => sum + conta.valor, 0).toFixed(2).replace('.', ',')}</strong></td>
+                    <td class="text-right"><strong>R$ ${contasFiltradas.reduce((sum, conta) => sum + (conta.valor_baixa || 0), 0).toFixed(2).replace('.', ',')}</strong></td>
+                    <td class="text-right"><strong>R$ ${contasFiltradas.reduce((sum, conta) => sum + (conta.valor - (conta.valor_baixa || 0)), 0).toFixed(2).replace('.', ',')}</strong></td>
+                    <td class="text-right"><strong>${contasFiltradas.length} contas</strong></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+            
+            <div class="summary-cards">
+              <div class="summary-card">
+                <h4>Total de Contas</h4>
+                <div class="value">${contasFiltradas.length}</div>
+              </div>
+              <div class="summary-card">
+                <h4>Valor Total</h4>
+                <div class="value">R$ ${contasFiltradas.reduce((sum, conta) => sum + conta.valor, 0).toFixed(2).replace('.', ',')}</div>
+              </div>
+              <div class="summary-card">
+                <h4>Saldo Pendente</h4>
+                <div class="value">R$ ${contasFiltradas.reduce((sum, conta) => sum + (conta.valor - (conta.valor_baixa || 0)), 0).toFixed(2).replace('.', ',')}</div>
+              </div>
+            </div>
+          </div>
         </body>
       </html>
     `;
