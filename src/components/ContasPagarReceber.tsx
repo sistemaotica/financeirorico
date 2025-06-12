@@ -46,8 +46,10 @@ interface Conta {
   parcela_numero: number;
   parcela_total: number;
   status: 'aberto' | 'pago' | 'vencido';
+  banco_baixa_id: string;
   clientes?: { nome: string };
   fornecedores?: { nome: string };
+  bancos?: { nome: string };
 }
 
 interface BaixaConta {
@@ -66,6 +68,7 @@ const ContasPagarReceber = () => {
   const [contas, setContas] = useState<Conta[]>([]);
   const [baixasContas, setBaixasContas] = useState<BaixaConta[]>([]);
   const [filtroStatus, setFiltroStatus] = useState<string>('todos');
+  const [filtroBanco, setFiltroBanco] = useState<string>('todos');
   const [baixaDialogOpen, setBaixaDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedConta, setSelectedConta] = useState<Conta | null>(null);
@@ -74,6 +77,7 @@ const ContasPagarReceber = () => {
     destino_tipo: 'fornecedor' as 'cliente' | 'fornecedor',
     cliente_id: '',
     fornecedor_id: '',
+    banco_id: '',
     referencia: '',
     numero_nota: '',
     data_vencimento: '',
@@ -132,7 +136,8 @@ const ContasPagarReceber = () => {
       .select(`
         *,
         clientes (nome),
-        fornecedores (nome)
+        fornecedores (nome),
+        bancos:banco_baixa_id (nome)
       `)
       .order('data_vencimento', { ascending: true });
 
@@ -207,7 +212,7 @@ const ContasPagarReceber = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.referencia || !formData.data_vencimento || !formData.valor_total) {
+    if (!formData.referencia || !formData.data_vencimento || !formData.valor_total || !formData.banco_id) {
       toast({
         title: "Erro",
         description: "Preencha todos os campos obrigatórios",
@@ -243,6 +248,7 @@ const ContasPagarReceber = () => {
       destino_tipo: formData.destino_tipo,
       cliente_id: formData.destino_tipo === 'cliente' ? formData.cliente_id : null,
       fornecedor_id: formData.destino_tipo === 'fornecedor' ? formData.fornecedor_id : null,
+      banco_baixa_id: formData.banco_id,
       referencia: formData.referencia,
       numero_nota: formData.numero_nota || null,
       data_vencimento: parcela.data_vencimento,
@@ -272,6 +278,7 @@ const ContasPagarReceber = () => {
         destino_tipo: 'fornecedor',
         cliente_id: '',
         fornecedor_id: '',
+        banco_id: '',
         referencia: '',
         numero_nota: '',
         data_vencimento: '',
@@ -427,14 +434,21 @@ const ContasPagarReceber = () => {
     hoje.setHours(0, 0, 0, 0);
     const dataVencimento = new Date(conta.data_vencimento + 'T00:00:00');
     
-    if (filtroStatus === 'todos') return true;
-    if (filtroStatus === 'pago') return conta.valor_baixa >= conta.valor;
-    if (filtroStatus === 'aberto') return conta.valor_baixa < conta.valor;
-    if (filtroStatus === 'vencido') {
-      // Mostrar contas com data de vencimento anterior ao dia atual E que não estão totalmente pagas
-      return dataVencimento < hoje && conta.valor_baixa < conta.valor;
+    // Filtro por status
+    let statusMatch = true;
+    if (filtroStatus === 'pago') statusMatch = conta.valor_baixa >= conta.valor;
+    else if (filtroStatus === 'aberto') statusMatch = conta.valor_baixa < conta.valor;
+    else if (filtroStatus === 'vencido') {
+      statusMatch = dataVencimento < hoje && conta.valor_baixa < conta.valor;
     }
-    return conta.status === filtroStatus;
+    
+    // Filtro por banco
+    let bancoMatch = true;
+    if (filtroBanco !== 'todos') {
+      bancoMatch = conta.banco_baixa_id === filtroBanco;
+    }
+    
+    return statusMatch && bancoMatch;
   });
 
   const contasClientes = contasFiltradas.filter(conta => conta.destino_tipo === 'cliente');
@@ -520,6 +534,22 @@ const ContasPagarReceber = () => {
             )}
 
             <div>
+              <Label htmlFor="banco">Banco *</Label>
+              <Select value={formData.banco_id} onValueChange={(value) => setFormData({...formData, banco_id: value})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o banco" />
+                </SelectTrigger>
+                <SelectContent>
+                  {bancos.map((banco) => (
+                    <SelectItem key={banco.id} value={banco.id}>
+                      {banco.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
               <Label htmlFor="referencia">Referência *</Label>
               <Input
                 id="referencia"
@@ -590,17 +620,32 @@ const ContasPagarReceber = () => {
         <CardHeader>
           <CardTitle className="flex justify-between items-center">
             Contas Cadastradas
-            <Select value={filtroStatus} onValueChange={setFiltroStatus}>
-              <SelectTrigger className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                <SelectItem value="aberto">Em Aberto</SelectItem>
-                <SelectItem value="pago">Pago</SelectItem>
-                <SelectItem value="vencido">Vencido</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex space-x-2">
+              <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+                <SelectTrigger className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="aberto">Em Aberto</SelectItem>
+                  <SelectItem value="pago">Pago</SelectItem>
+                  <SelectItem value="vencido">Vencido</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filtroBanco} onValueChange={setFiltroBanco}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Filtrar por banco" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os bancos</SelectItem>
+                  {bancos.map((banco) => (
+                    <SelectItem key={banco.id} value={banco.id}>
+                      {banco.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -616,6 +661,7 @@ const ContasPagarReceber = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Cliente</TableHead>
+                      <TableHead>Banco</TableHead>
                       <TableHead>Referência</TableHead>
                       <TableHead>Vencimento</TableHead>
                       <TableHead>Parcela</TableHead>
@@ -629,6 +675,7 @@ const ContasPagarReceber = () => {
                     {contasClientes.map((conta) => (
                       <TableRow key={conta.id}>
                         <TableCell>{conta.clientes?.nome}</TableCell>
+                        <TableCell>{conta.bancos?.nome || 'N/A'}</TableCell>
                         <TableCell>{conta.referencia}</TableCell>
                         <TableCell>{new Date(conta.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}</TableCell>
                         <TableCell>{conta.parcela_numero}/{conta.parcela_total}</TableCell>
@@ -689,6 +736,7 @@ const ContasPagarReceber = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Fornecedor</TableHead>
+                      <TableHead>Banco</TableHead>
                       <TableHead>Referência</TableHead>
                       <TableHead>Vencimento</TableHead>
                       <TableHead>Parcela</TableHead>
@@ -702,6 +750,7 @@ const ContasPagarReceber = () => {
                     {contasFornecedores.map((conta) => (
                       <TableRow key={conta.id}>
                         <TableCell>{conta.fornecedores?.nome}</TableCell>
+                        <TableCell>{conta.bancos?.nome || 'N/A'}</TableCell>
                         <TableCell>{conta.referencia}</TableCell>
                         <TableCell>{new Date(conta.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}</TableCell>
                         <TableCell>{conta.parcela_numero}/{conta.parcela_total}</TableCell>
