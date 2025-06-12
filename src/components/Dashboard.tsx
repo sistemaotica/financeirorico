@@ -279,55 +279,55 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Saldo da Conta - COM REALTIME */}
-        <Card className="shadow-2xl border-0 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 text-white relative overflow-hidden max-w-md mx-auto">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-12 -translate-x-12"></div>
-          
-          <CardHeader className="relative z-10">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-semibold text-blue-100">
-                Saldo da Conta
-              </CardTitle>
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-xs text-green-300 font-medium">LIVE</span>
-              </div>
-            </div>
-          </CardHeader>
-          
-          <CardContent className="relative z-10 space-y-3">
-            <div className="text-3xl font-bold text-white transition-all duration-500 ease-out">
-              {formatCurrency(saldoBanco)}
-            </div>
+        {/* Cards Principais */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Saldo da Conta - COM REALTIME */}
+          <Card className="shadow-2xl border-0 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 text-white relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-12 -translate-x-12"></div>
             
-            {bancoAtual && (
-              <div className="space-y-1">
-                <p className="text-blue-100 font-medium">
-                  {bancoAtual.nome}
-                </p>
-                <div className="flex items-center space-x-3 text-blue-200 text-xs">
-                  <span>Ag: {bancoAtual.agencia}</span>
-                  <span>•</span>
-                  <span>Conta: {bancoAtual.conta}</span>
+            <CardHeader className="relative z-10">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-semibold text-blue-100">
+                  Saldo da Conta
+                </CardTitle>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="text-xs text-green-300 font-medium">LIVE</span>
                 </div>
-                <Badge className="bg-white/20 text-white border-white/30 mt-1 text-xs">
-                  {bancoAtual.tipo_banco}
-                </Badge>
               </div>
-            )}
+            </CardHeader>
             
-            <div className="flex items-center space-x-2 pt-1">
-              <Activity className="w-3 h-3 text-green-400" />
-              <span className="text-green-300 text-xs font-medium">
-                Sincronização Automática
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+            <CardContent className="relative z-10 space-y-3">
+              <div className="text-3xl font-bold text-white transition-all duration-500 ease-out">
+                {formatCurrency(saldoBanco)}
+              </div>
+              
+              {bancoAtual && (
+                <div className="space-y-1">
+                  <p className="text-blue-100 font-medium">
+                    {bancoAtual.nome}
+                  </p>
+                  <div className="flex items-center space-x-3 text-blue-200 text-xs">
+                    <span>Ag: {bancoAtual.agencia}</span>
+                    <span>•</span>
+                    <span>Conta: {bancoAtual.conta}</span>
+                  </div>
+                  <Badge className="bg-white/20 text-white border-white/30 mt-1 text-xs">
+                    {bancoAtual.tipo_banco}
+                  </Badge>
+                </div>
+              )}
+              
+              <div className="flex items-center space-x-2 pt-1">
+                <Activity className="w-3 h-3 text-green-400" />
+                <span className="text-green-300 text-xs font-medium">
+                  Sincronização Automática
+                </span>
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Cards de Totais - Independentes do Banco */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-4xl mx-auto">
           {/* Total Contas a Pagar */}
           <Card className="shadow-2xl border-0 bg-gradient-to-br from-red-500 via-red-600 to-pink-700 text-white relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
