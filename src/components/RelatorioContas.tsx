@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,7 +15,7 @@ const RelatorioContas = () => {
   const [tipoData, setTipoData] = useState<'vencimento' | 'baixa' | ''>('');
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
-  const [tipoDestino, setTipoDestino] = useState<'cliente' | 'fornecedor' | ''>('');
+  const [tipoDestino, setTipoDestino] = useState<'cliente' | 'fornecedor' | 'todos' | ''>('');
   const [destinoId, setDestinoId] = useState('');
 
   const gerarRelatorio = () => {
@@ -239,15 +238,15 @@ const RelatorioContas = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="tipo-destino">Tipo de Destino</Label>
-              <Select value={tipoDestino} onValueChange={(value: 'cliente' | 'fornecedor' | '') => {
-                setTipoDestino(value);
+              <Select value={tipoDestino} onValueChange={(value: 'cliente' | 'fornecedor' | 'todos') => {
+                setTipoDestino(value === 'todos' ? '' : value as 'cliente' | 'fornecedor');
                 setDestinoId('');
               }}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="todos">Todos</SelectItem>
                   <SelectItem value="cliente">Clientes</SelectItem>
                   <SelectItem value="fornecedor">Fornecedores</SelectItem>
                 </SelectContent>
@@ -259,12 +258,12 @@ const RelatorioContas = () => {
                 <Label htmlFor="destino">
                   {tipoDestino === 'cliente' ? 'Cliente' : 'Fornecedor'}
                 </Label>
-                <Select value={destinoId} onValueChange={setDestinoId}>
+                <Select value={destinoId} onValueChange={(value) => setDestinoId(value === 'todos' ? '' : value)}>
                   <SelectTrigger>
                     <SelectValue placeholder={`Selecione ${tipoDestino === 'cliente' ? 'o cliente' : 'o fornecedor'}`} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todos</SelectItem>
+                    <SelectItem value="todos">Todos</SelectItem>
                     {(tipoDestino === 'cliente' ? clientes : fornecedores).map((item) => (
                       <SelectItem key={item.id} value={item.id}>
                         {item.nome}
