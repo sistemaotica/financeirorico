@@ -421,10 +421,19 @@ const ContasPagarReceber = () => {
     }
   };
 
+  // FILTROS CORRIGIDOS - Item 1
   const contasFiltradas = contas.filter(conta => {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    const dataVencimento = new Date(conta.data_vencimento + 'T00:00:00');
+    
     if (filtroStatus === 'todos') return true;
     if (filtroStatus === 'pago') return conta.valor_baixa >= conta.valor;
     if (filtroStatus === 'aberto') return conta.valor_baixa < conta.valor;
+    if (filtroStatus === 'vencido') {
+      // Mostrar contas com data de vencimento anterior ao dia atual E que não estão totalmente pagas
+      return dataVencimento < hoje && conta.valor_baixa < conta.valor;
+    }
     return conta.status === filtroStatus;
   });
 

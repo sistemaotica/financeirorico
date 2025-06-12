@@ -48,6 +48,9 @@ const Dashboard = () => {
   const [contasAtrasadasReceber, setContasAtrasadasReceber] = useState<Conta[]>([]);
   const [totalAtrasadoPagar, setTotalAtrasadoPagar] = useState<number>(0);
   const [totalAtrasadoReceber, setTotalAtrasadoReceber] = useState<number>(0);
+  // NOVOS ESTADOS - Itens 2 e 3
+  const [totalContasPagar, setTotalContasPagar] = useState<number>(0);
+  const [totalContasReceber, setTotalContasReceber] = useState<number>(0);
   const [isRealtimeConnected, setIsRealtimeConnected] = useState<boolean>(false);
   
   // Usar ref para controlar se já há uma subscription ativa
@@ -118,6 +121,19 @@ const Dashboard = () => {
           carregarDados();
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'contas'
+        },
+        (payload) => {
+          console.log('Dashboard Realtime: Mudança em contas detectada:', payload);
+          // Recarregar dados quando há mudanças em contas
+          carregarDados();
+        }
+      )
       .subscribe((status) => {
         console.log('Dashboard Realtime status:', status);
         setIsRealtimeConnected(status === 'SUBSCRIBED');
@@ -155,7 +171,8 @@ const Dashboard = () => {
   const carregarDados = async () => {
     await Promise.all([
       carregarBancos(),
-      carregarContasAtrasadas()
+      carregarContasAtrasadas(),
+      carregarTotaisContas() // NOVA FUNÇÃO - Itens 2 e 3
     ]);
   };
 
@@ -178,6 +195,41 @@ const Dashboard = () => {
       }
     } else if (error) {
       console.error('Dashboard: Erro ao carregar bancos:', error);
+    }
+  };
+
+  // NOVA FUNÇÃO - Itens 2 e 3
+  const carregarTotaisContas = async () => {
+    console.log('Dashboard: Carregando totais de contas...');
+    
+    // Total contas a pagar (fornecedores) - todas as contas em aberto
+    const { data: contasPagar, error: errorPagar } = await supabase
+      .from('contas')
+      .select('valor, valor_baixa')
+      .eq('destino_tipo', 'fornecedor')
+      .lt('valor_baixa', 'valor'); // Apenas contas não totalmente pagas
+
+    if (!errorPagar && contasPagar) {
+      const totalPagar = contasPagar.reduce((sum, conta) => 
+        sum + (conta.valor - (conta.valor_baixa || 0)), 0
+      );
+      setTotalContasPagar(totalPagar);
+      console.log('Dashboard: Total contas a pagar:', totalPagar);
+    }
+
+    // Total contas a receber (clientes) - todas as contas em aberto
+    const { data: contasReceber, error: errorReceber } = await supabase
+      .from('contas')
+      .select('valor, valor_baixa')
+      .eq('destino_tipo', 'cliente')
+      .lt('valor_baixa', 'valor'); // Apenas contas não totalmente pagas
+
+    if (!errorReceber && contasReceber) {
+      const totalReceber = contasReceber.reduce((sum, conta) => 
+        sum + (conta.valor - (conta.valor_baixa || 0)), 0
+      );
+      setTotalContasReceber(totalReceber);
+      console.log('Dashboard: Total contas a receber:', totalReceber);
     }
   };
 
@@ -212,8 +264,9 @@ const Dashboard = () => {
         conta.destino_tipo === 'cliente' && conta.tipo === 'receber'
       );
       
-      setContasAtrasadasPagar(contasPagarAtrasadas.slice(0, 5));
-      setContasAtrasadasReceber(contasReceberAtrasadas.slice(0, 5));
+      // ALTERADO - Itens 4 e 5: Não limitar a 5, mostrar todas com scroll
+      setContasAtrasadasPagar(contasPagarAtrasadas);
+      setContasAtrasadasReceber(contasReceberAtrasadas);
       
       const totalPagar = contasPagarAtrasadas.reduce((sum, conta) => sum + (conta.valor - (conta.valor_baixa || 0)), 0);
       const totalReceber = contasReceberAtrasadas.reduce((sum, conta) => sum + (conta.valor - (conta.valor_baixa || 0)), 0);
@@ -313,16 +366,16 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Cards Principais */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Cards Principais - ATUALIZADOS com Itens 2 e 3 */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Saldo da Conta - COM REALTIME */}
-          <Card className="lg:col-span-1 shadow-2xl border-0 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 text-white relative overflow-hidden">
+          <Card className="shadow-2xl border-0 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 text-white relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
             <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-12 -translate-x-12"></div>
             
             <CardHeader className="relative z-10">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-xl font-semibold text-blue-100">
+                <CardTitle className="text-lg font-semibold text-blue-100">
                   Saldo da Conta
                 </CardTitle>
                 <div className="flex items-center space-x-2">
@@ -332,226 +385,254 @@ const Dashboard = () => {
               </div>
             </CardHeader>
             
-            <CardContent className="relative z-10 space-y-4">
-              <div className="text-4xl font-bold text-white transition-all duration-500 ease-out">
+            <CardContent className="relative z-10 space-y-3">
+              <div className="text-3xl font-bold text-white transition-all duration-500 ease-out">
                 {formatCurrency(saldoBanco)}
               </div>
               
               {bancoAtual && (
-                <div className="space-y-2">
-                  <p className="text-blue-100 font-medium text-lg">
+                <div className="space-y-1">
+                  <p className="text-blue-100 font-medium">
                     {bancoAtual.nome}
                   </p>
-                  <div className="flex items-center space-x-4 text-blue-200 text-sm">
+                  <div className="flex items-center space-x-3 text-blue-200 text-xs">
                     <span>Ag: {bancoAtual.agencia}</span>
                     <span>•</span>
                     <span>Conta: {bancoAtual.conta}</span>
                   </div>
-                  <Badge className="bg-white/20 text-white border-white/30 mt-2">
+                  <Badge className="bg-white/20 text-white border-white/30 mt-1 text-xs">
                     {bancoAtual.tipo_banco}
                   </Badge>
                 </div>
               )}
               
-              <div className="flex items-center space-x-2 pt-2">
-                <Activity className="w-4 h-4 text-green-400" />
-                <span className="text-green-300 text-sm font-medium">
+              <div className="flex items-center space-x-2 pt-1">
+                <Activity className="w-3 h-3 text-green-400" />
+                <span className="text-green-300 text-xs font-medium">
                   Sincronização Automática
                 </span>
               </div>
             </CardContent>
           </Card>
 
-          {/* Contas a Pagar Atrasadas */}
+          {/* NOVO - Total Contas a Pagar (Item 2) */}
           <Card className="shadow-2xl border-0 bg-gradient-to-br from-red-500 via-red-600 to-pink-700 text-white relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
             
             <CardHeader className="relative z-10">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-xl font-semibold text-red-100">
-                  Contas a Pagar
+                <CardTitle className="text-lg font-semibold text-red-100">
+                  Total a Pagar
                 </CardTitle>
-                <TrendingDown className="w-8 h-8 text-red-200" />
+                <TrendingDown className="w-6 h-6 text-red-200" />
               </div>
             </CardHeader>
             
-            <CardContent className="relative z-10 space-y-4">
-              <div className="text-4xl font-bold text-white">
-                {formatCurrency(totalAtrasadoPagar)}
+            <CardContent className="relative z-10 space-y-3">
+              <div className="text-3xl font-bold text-white">
+                {formatCurrency(totalContasPagar)}
               </div>
               <div className="flex items-center space-x-2">
-                <AlertTriangle className="w-5 h-5 text-red-200" />
-                <span className="text-red-100 text-lg">
-                  {contasAtrasadasPagar.length} contas atrasadas
+                <DollarSign className="w-4 h-4 text-red-200" />
+                <span className="text-red-100">
+                  Todas as contas em aberto
                 </span>
               </div>
             </CardContent>
           </Card>
 
-          {/* Contas a Receber Atrasadas */}
+          {/* NOVO - Total Contas a Receber (Item 3) */}
+          <Card className="shadow-2xl border-0 bg-gradient-to-br from-green-500 via-green-600 to-emerald-700 text-white relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
+            
+            <CardHeader className="relative z-10">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-semibold text-green-100">
+                  Total a Receber
+                </CardTitle>
+                <TrendingUp className="w-6 h-6 text-green-200" />
+              </div>
+            </CardHeader>
+            
+            <CardContent className="relative z-10 space-y-3">
+              <div className="text-3xl font-bold text-white">
+                {formatCurrency(totalContasReceber)}
+              </div>
+              <div className="flex items-center space-x-2">
+                <DollarSign className="w-4 h-4 text-green-200" />
+                <span className="text-green-100">
+                  Todas as contas em aberto
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Resumo das Contas Atrasadas */}
           <Card className="shadow-2xl border-0 bg-gradient-to-br from-orange-500 via-orange-600 to-yellow-600 text-white relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
             
             <CardHeader className="relative z-10">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-xl font-semibold text-orange-100">
-                  Contas a Receber
+                <CardTitle className="text-lg font-semibold text-orange-100">
+                  Contas Atrasadas
                 </CardTitle>
-                <TrendingUp className="w-8 h-8 text-orange-200" />
+                <AlertTriangle className="w-6 h-6 text-orange-200" />
               </div>
             </CardHeader>
             
-            <CardContent className="relative z-10 space-y-4">
-              <div className="text-4xl font-bold text-white">
-                {formatCurrency(totalAtrasadoReceber)}
+            <CardContent className="relative z-10 space-y-3">
+              <div className="text-3xl font-bold text-white">
+                {formatCurrency(totalAtrasadoPagar + totalAtrasadoReceber)}
               </div>
-              <div className="flex items-center space-x-2">
-                <Clock className="w-5 h-5 text-orange-200" />
-                <span className="text-orange-100 text-lg">
-                  {contasAtrasadasReceber.length} recebimentos atrasados
-                </span>
+              <div className="space-y-1 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-orange-200">A pagar:</span>
+                  <span className="text-white font-medium">{formatCurrency(totalAtrasadoPagar)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-orange-200">A receber:</span>
+                  <span className="text-white font-medium">{formatCurrency(totalAtrasadoReceber)}</span>
+                </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Detalhamento das Contas */}
+        {/* Detalhamento das Contas Atrasadas - ATUALIZADOS com Itens 4 e 5 */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-          {/* Contas a Pagar Detalhadas */}
+          {/* Contas a Pagar Atrasadas - COM SCROLL VERTICAL (Item 4) */}
           <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="text-2xl font-bold text-slate-800 flex items-center gap-3">
                 <ArrowDown className="w-6 h-6 text-red-500" />
-                Contas a Pagar Atrasadas
+                Contas a Pagar Atrasadas ({contasAtrasadasPagar.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {contasAtrasadasPagar.length > 0 ? (
-                  <>
-                    <div className="p-4 bg-red-50 rounded-xl border-l-4 border-red-500">
-                      <div className="flex justify-between items-center">
-                        <span className="font-bold text-red-700 text-lg">Total Atrasado:</span>
-                        <span className="text-red-700 font-bold text-2xl">
-                          {formatCurrency(totalAtrasadoPagar)}
-                        </span>
-                      </div>
+              {contasAtrasadasPagar.length > 0 ? (
+                <div className="space-y-4">
+                  <div className="p-4 bg-red-50 rounded-xl border-l-4 border-red-500">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-red-700 text-lg">Total Atrasado:</span>
+                      <span className="text-red-700 font-bold text-2xl">
+                        {formatCurrency(totalAtrasadoPagar)}
+                      </span>
                     </div>
-                    
-                    <div className="space-y-3">
-                      {contasAtrasadasPagar.map((conta) => {
-                        const hoje = new Date();
-                        const vencimento = new Date(conta.data_vencimento);
-                        const diasAtraso = Math.ceil((hoje.getTime() - vencimento.getTime()) / (1000 * 60 * 60 * 24));
-                        
-                        return (
-                          <div key={conta.id} className="p-4 bg-slate-50 rounded-lg border border-slate-200 hover:shadow-md transition-shadow">
-                            <div className="flex justify-between items-start">
-                              <div className="space-y-2">
-                                <p className="font-semibold text-slate-800 text-lg">{conta.referencia}</p>
-                                <p className="text-slate-600">
-                                  {conta.destino_tipo === 'fornecedor' ? conta.fornecedores?.nome : 'Despesa'}
-                                </p>
-                                <div className="flex items-center space-x-2">
-                                  <Calendar className="w-4 h-4 text-slate-400" />
-                                  <span className="text-sm text-slate-500">
-                                    {new Date(conta.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}
-                                  </span>
-                                  <Badge className={`${getStatusColor(-diasAtraso)} border`}>
-                                    {diasAtraso} dias atrasado
-                                  </Badge>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <span className="text-red-600 font-bold text-lg">
-                                  {formatCurrency(conta.valor - (conta.valor_baixa || 0))}
+                  </div>
+                  
+                  {/* SCROLL VERTICAL - Item 4 */}
+                  <div className="max-h-96 overflow-y-auto space-y-3 pr-2">
+                    {contasAtrasadasPagar.map((conta) => {
+                      const hoje = new Date();
+                      const vencimento = new Date(conta.data_vencimento);
+                      const diasAtraso = Math.ceil((hoje.getTime() - vencimento.getTime()) / (1000 * 60 * 60 * 24));
+                      
+                      return (
+                        <div key={conta.id} className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:shadow-md transition-shadow">
+                          <div className="flex justify-between items-start">
+                            <div className="space-y-1">
+                              <p className="font-semibold text-slate-800">{conta.referencia}</p>
+                              <p className="text-slate-600 text-sm">
+                                {conta.destino_tipo === 'fornecedor' ? conta.fornecedores?.nome : 'Despesa'}
+                              </p>
+                              <div className="flex items-center space-x-2">
+                                <Calendar className="w-3 h-3 text-slate-400" />
+                                <span className="text-xs text-slate-500">
+                                  {new Date(conta.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}
                                 </span>
+                                <Badge className={`${getStatusColor(-diasAtraso)} border text-xs`}>
+                                  {diasAtraso} dias atrasado
+                                </Badge>
                               </div>
                             </div>
+                            <div className="text-right">
+                              <span className="text-red-600 font-bold">
+                                {formatCurrency(conta.valor - (conta.valor_baixa || 0))}
+                              </span>
+                            </div>
                           </div>
-                        );
-                      })}
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-center py-12">
-                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Eye className="w-8 h-8 text-green-600" />
-                    </div>
-                    <p className="text-slate-500 text-lg">Nenhuma conta a pagar atrasada</p>
-                    <p className="text-slate-400">Parabéns! Você está em dia</p>
+                        </div>
+                      );
+                    })}
                   </div>
-                )}
-              </div>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Eye className="w-8 h-8 text-green-600" />
+                  </div>
+                  <p className="text-slate-500 text-lg">Nenhuma conta a pagar atrasada</p>
+                  <p className="text-slate-400">Parabéns! Você está em dia</p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Contas a Receber Detalhadas */}
+          {/* Contas a Receber Atrasadas - COM SCROLL VERTICAL (Item 5) */}
           <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="text-2xl font-bold text-slate-800 flex items-center gap-3">
                 <ArrowUp className="w-6 h-6 text-orange-500" />
-                Contas a Receber Atrasadas
+                Contas a Receber Atrasadas ({contasAtrasadasReceber.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {contasAtrasadasReceber.length > 0 ? (
-                  <>
-                    <div className="p-4 bg-orange-50 rounded-xl border-l-4 border-orange-500">
-                      <div className="flex justify-between items-center">
-                        <span className="font-bold text-orange-700 text-lg">Total Atrasado:</span>
-                        <span className="text-orange-700 font-bold text-2xl">
-                          {formatCurrency(totalAtrasadoReceber)}
-                        </span>
-                      </div>
+              {contasAtrasadasReceber.length > 0 ? (
+                <div className="space-y-4">
+                  <div className="p-4 bg-orange-50 rounded-xl border-l-4 border-orange-500">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-orange-700 text-lg">Total Atrasado:</span>
+                      <span className="text-orange-700 font-bold text-2xl">
+                        {formatCurrency(totalAtrasadoReceber)}
+                      </span>
                     </div>
-                    
-                    <div className="space-y-3">
-                      {contasAtrasadasReceber.map((conta) => {
-                        const hoje = new Date();
-                        const vencimento = new Date(conta.data_vencimento);
-                        const diasAtraso = Math.ceil((hoje.getTime() - vencimento.getTime()) / (1000 * 60 * 60 * 24));
-                        
-                        return (
-                          <div key={conta.id} className="p-4 bg-slate-50 rounded-lg border border-slate-200 hover:shadow-md transition-shadow">
-                            <div className="flex justify-between items-start">
-                              <div className="space-y-2">
-                                <p className="font-semibold text-slate-800 text-lg">{conta.referencia}</p>
-                                <p className="text-slate-600">
-                                  {conta.destino_tipo === 'cliente' ? conta.clientes?.nome : 'Receita'}
-                                </p>
-                                <div className="flex items-center space-x-2">
-                                  <Calendar className="w-4 h-4 text-slate-400" />
-                                  <span className="text-sm text-slate-500">
-                                    {new Date(conta.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}
-                                  </span>
-                                  <Badge className={`${getStatusColor(-diasAtraso)} border`}>
-                                    {diasAtraso} dias atrasado
-                                  </Badge>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <span className="text-orange-600 font-bold text-lg">
-                                  {formatCurrency(conta.valor - (conta.valor_baixa || 0))}
+                  </div>
+                  
+                  {/* SCROLL VERTICAL - Item 5 */}
+                  <div className="max-h-96 overflow-y-auto space-y-3 pr-2">
+                    {contasAtrasadasReceber.map((conta) => {
+                      const hoje = new Date();
+                      const vencimento = new Date(conta.data_vencimento);
+                      const diasAtraso = Math.ceil((hoje.getTime() - vencimento.getTime()) / (1000 * 60 * 60 * 24));
+                      
+                      return (
+                        <div key={conta.id} className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:shadow-md transition-shadow">
+                          <div className="flex justify-between items-start">
+                            <div className="space-y-1">
+                              <p className="font-semibold text-slate-800">{conta.referencia}</p>
+                              <p className="text-slate-600 text-sm">
+                                {conta.destino_tipo === 'cliente' ? conta.clientes?.nome : 'Receita'}
+                              </p>
+                              <div className="flex items-center space-x-2">
+                                <Calendar className="w-3 h-3 text-slate-400" />
+                                <span className="text-xs text-slate-500">
+                                  {new Date(conta.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}
                                 </span>
+                                <Badge className={`${getStatusColor(-diasAtraso)} border text-xs`}>
+                                  {diasAtraso} dias atrasado
+                                </Badge>
                               </div>
                             </div>
+                            <div className="text-right">
+                              <span className="text-orange-600 font-bold">
+                                {formatCurrency(conta.valor - (conta.valor_baixa || 0))}
+                              </span>
+                            </div>
                           </div>
-                        );
-                      })}
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-center py-12">
-                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Eye className="w-8 h-8 text-green-600" />
-                    </div>
-                    <p className="text-slate-500 text-lg">Nenhuma conta a receber atrasada</p>
-                    <p className="text-slate-400">Excelente! Todos os pagamentos em dia</p>
+                        </div>
+                      );
+                    })}
                   </div>
-                )}
-              </div>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Eye className="w-8 h-8 text-green-600" />
+                  </div>
+                  <p className="text-slate-500 text-lg">Nenhuma conta a receber atrasada</p>
+                  <p className="text-slate-400">Excelente! Todos os pagamentos em dia</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
