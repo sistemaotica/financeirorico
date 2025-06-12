@@ -26,6 +26,7 @@ export interface Conta {
   referencia: string;
   numero_nota: string;
   data_vencimento: string;
+  data_pagamento?: string;
   valor: number;
   valor_baixa: number;
   parcela_numero: number;
