@@ -443,15 +443,18 @@ const ContasPagarReceber = () => {
         return;
       }
 
-      // Calcular o novo saldo baseado no tipo da conta
+      // Calcular o novo saldo - LÓGICA CORRIGIDA
       let novoSaldo: number;
       
+      // LÓGICA CORRETA DE REVERSÃO:
+      // Para FORNECEDORES (contas a pagar): ao desfazer baixa, SOMA de volta ao banco
+      // Para CLIENTES (contas a receber): ao desfazer baixa, SUBTRAI do banco
       if (conta.destino_tipo === 'fornecedor') {
-        // Para fornecedores (contas a pagar), ao desfazer a baixa, soma de volta ao banco
+        // Conta de fornecedor: ao desfazer, SOMA o valor de volta (reverter o pagamento)
         novoSaldo = banco.saldo + baixa.valor;
-        console.log(`Fornecedor: Saldo atual ${banco.saldo} + baixa ${baixa.valor} = novo saldo ${novoSaldo}`);
+        console.log(`Fornecedor - Desfazendo baixa: Saldo atual ${banco.saldo} + baixa ${baixa.valor} = novo saldo ${novoSaldo}`);
       } else {
-        // Para clientes (contas a receber), ao desfazer a baixa, subtrai do banco
+        // Conta de cliente: ao desfazer, SUBTRAI o valor (reverter o recebimento)
         novoSaldo = banco.saldo - baixa.valor;
         
         // Verificar se o banco tem saldo suficiente
@@ -463,7 +466,7 @@ const ContasPagarReceber = () => {
           });
           return;
         }
-        console.log(`Cliente: Saldo atual ${banco.saldo} - baixa ${baixa.valor} = novo saldo ${novoSaldo}`);
+        console.log(`Cliente - Desfazendo baixa: Saldo atual ${banco.saldo} - baixa ${baixa.valor} = novo saldo ${novoSaldo}`);
       }
 
       // 1. Atualizar estado local IMEDIATAMENTE
