@@ -22,7 +22,7 @@ const Apresentacao = () => {
       id: 2,
       title: "Gestão de Contas",
       subtitle: "Organize suas Finanças",
-      description: "Gerencie contas a pagar e receber com facilidade. Controle vencimentos, realize baixas automáticas e mantenha seu fluxo de caixa sempre atualizado.",
+      description: "Gerencie contas a pagar e receber com facilidade. Controle vencimentos, realize baixas automáticas e mantenha seu fluxo de caixa sempre atualizado com total precisão.",
       icon: <FileText className="w-16 h-16 text-green-500" />,
       gradient: "from-green-500 to-teal-600"
     },
@@ -98,8 +98,8 @@ const Apresentacao = () => {
                   <Card className="border-0 shadow-2xl overflow-hidden">
                     <div className={`bg-gradient-to-r ${slide.gradient} text-white`}>
                       <CardContent className="p-8 lg:p-12">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-                          <div className="space-y-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center min-h-[400px]">
+                          <div className="space-y-6 flex flex-col justify-center">
                             <div className="space-y-3">
                               <h2 className="text-3xl lg:text-5xl font-bold leading-tight">
                                 {slide.title}
@@ -108,20 +108,20 @@ const Apresentacao = () => {
                                 {slide.subtitle}
                               </h3>
                             </div>
-                            <p className="text-lg lg:text-xl leading-relaxed opacity-95">
+                            <p className="text-lg lg:text-xl leading-relaxed opacity-95 min-h-[80px] flex items-center">
                               {slide.description}
                             </p>
                             <Button 
                               size="lg" 
-                              className="bg-white text-gray-900 hover:bg-gray-100 font-semibold px-8 py-3"
+                              className="bg-white text-gray-900 hover:bg-gray-100 font-semibold px-8 py-3 w-fit"
                               onClick={() => navigate('/')}
                             >
                               <ArrowRight className="w-5 h-5 mr-2" />
                               Começar Agora
                             </Button>
                           </div>
-                          <div className="flex justify-center lg:justify-end">
-                            <div className="bg-white/20 backdrop-blur-sm rounded-full p-8 lg:p-12">
+                          <div className="flex justify-center lg:justify-end items-center">
+                            <div className="bg-white/20 backdrop-blur-sm rounded-full p-8 lg:p-12 flex items-center justify-center">
                               {slide.icon}
                             </div>
                           </div>
