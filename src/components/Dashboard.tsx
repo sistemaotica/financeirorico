@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
@@ -49,18 +49,37 @@ const Dashboard = () => {
   const [totalAtrasadoPagar, setTotalAtrasadoPagar] = useState<number>(0);
   const [totalAtrasadoReceber, setTotalAtrasadoReceber] = useState<number>(0);
   const [isRealtimeConnected, setIsRealtimeConnected] = useState<boolean>(false);
+  
+  // Usar ref para controlar se já há uma subscription ativa
+  const channelRef = useRef<any>(null);
 
   useEffect(() => {
     carregarDados();
     setupRealtimeSubscription();
+    
+    // Cleanup function para remover subscription
+    return () => {
+      if (channelRef.current) {
+        console.log('Dashboard: Removendo subscription existente');
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
   }, []);
 
   // Realtime subscription para sincronização instantânea
   const setupRealtimeSubscription = () => {
-    console.log('Dashboard: Configurando Realtime subscription...');
+    // Se já existe um canal, remove primeiro
+    if (channelRef.current) {
+      console.log('Dashboard: Removendo canal existente antes de criar novo');
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+    
+    console.log('Dashboard: Configurando nova Realtime subscription...');
     
     const channel = supabase
-      .channel('dashboard-realtime')
+      .channel('dashboard-realtime-unique')
       .on(
         'postgres_changes',
         {
@@ -104,10 +123,8 @@ const Dashboard = () => {
         setIsRealtimeConnected(status === 'SUBSCRIBED');
       });
 
-    return () => {
-      console.log('Dashboard: Removendo Realtime subscription');
-      supabase.removeChannel(channel);
-    };
+    // Armazenar referência do canal
+    channelRef.current = channel;
   };
 
   const handleBancoRealtimeUpdate = (payload: any) => {
