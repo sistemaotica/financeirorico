@@ -9,6 +9,7 @@ import CadastroBanco from '@/components/CadastroBanco';
 import CadastroCliente from '@/components/CadastroCliente';
 import CadastroFornecedor from '@/components/CadastroFornecedor';
 import RelatorioContas from '@/components/RelatorioContas';
+import ExtratoMovimento from '@/components/ExtratoMovimento';
 import TasksPanel from '@/components/tasks/TasksPanel';
 
 const Index = () => {
@@ -47,12 +48,7 @@ const Index = () => {
       case 'relatorio-contas':
         return <RelatorioContas />;
       case 'extrato':
-        return (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-2xl font-bold mb-4">Extrato do Movimento</h2>
-            <p className="text-gray-600">Extrato do movimento será implementado aqui.</p>
-          </div>
-        );
+        return <ExtratoMovimento />;
       case 'cadastro-banco':
         return <CadastroBanco />;
       case 'cadastro-cliente':
