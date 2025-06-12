@@ -40,52 +40,59 @@ const Dashboard = () => {
     carregarContasAtrasadas();
   }, []);
 
-  // Event listener para atualizações de saldo
+  // Event listener PRIORITÁRIO para atualizações INSTANTÂNEAS de saldo
   useEffect(() => {
     const handleBancoUpdate = (data: { bancoId: string; novoSaldo: number }) => {
-      console.log('Dashboard: Recebido evento de atualização de banco:', data);
+      console.log('Dashboard: ATUALIZAÇÃO INSTANTÂNEA recebida:', data);
       
-      // Atualizar o array de bancos IMEDIATAMENTE - PRIORIDADE MÁXIMA
+      // PRIORIDADE MÁXIMA: Atualizar array de bancos IMEDIATAMENTE
       setBancos(prevBancos => {
-        const novoBancos = prevBancos.map(banco => 
+        const bancosAtualizados = prevBancos.map(banco => 
           banco.id === data.bancoId 
             ? { ...banco, saldo: data.novoSaldo } 
             : banco
         );
-        console.log('Dashboard: Array de bancos atualizado IMEDIATAMENTE:', novoBancos);
-        return novoBancos;
+        console.log('Dashboard: Array de bancos atualizado INSTANTANEAMENTE:', bancosAtualizados);
+        return bancosAtualizados;
       });
       
-      // Se é o banco selecionado, atualizar o saldo IMEDIATAMENTE
+      // Se é o banco selecionado, atualizar saldo INSTANTANEAMENTE
       if (data.bancoId === bancoSelecionado) {
-        console.log('Dashboard: Atualizando saldo do banco selecionado IMEDIATAMENTE para:', data.novoSaldo);
+        console.log('Dashboard: SALDO ATUALIZADO INSTANTANEAMENTE para:', data.novoSaldo);
         setSaldoBanco(data.novoSaldo);
       }
     };
 
-    // Registrar o evento
+    // EVENTOS PRIORITÁRIOS para sincronização INSTANTÂNEA
     eventBus.on('bancoSaldoAtualizado', handleBancoUpdate);
-    console.log('Dashboard: Event listener registrado para bancoSaldoAtualizado');
+    eventBus.on('lancamentoRealizado', handleBancoUpdate); // Evento de lançamentos
+    eventBus.on('baixaContaRealizada', handleBancoUpdate); // Evento de baixas
+    eventBus.on('desfazerBaixaRealizada', handleBancoUpdate); // Evento de desfazer baixas
+    
+    console.log('Dashboard: Event listeners PRIORITÁRIOS registrados para sincronização INSTANTÂNEA');
 
     return () => {
       eventBus.off('bancoSaldoAtualizado', handleBancoUpdate);
-      console.log('Dashboard: Event listener removido');
+      eventBus.off('lancamentoRealizado', handleBancoUpdate);
+      eventBus.off('baixaContaRealizada', handleBancoUpdate);
+      eventBus.off('desfazerBaixaRealizada', handleBancoUpdate);
+      console.log('Dashboard: Event listeners removidos');
     };
   }, [bancoSelecionado]);
 
-  // Atualizar saldo quando bancos ou seleção mudam (apenas se não for uma atualização por evento)
+  // Sincronização secundária - apenas se não houver atualização por evento
   useEffect(() => {
     if (bancoSelecionado && bancos.length > 0) {
       const banco = bancos.find(b => b.id === bancoSelecionado);
-      if (banco) {
+      if (banco && banco.saldo !== saldoBanco) {
         setSaldoBanco(banco.saldo);
-        console.log(`Dashboard: Saldo sincronizado para banco ${banco.nome}: ${banco.saldo}`);
+        console.log(`Dashboard: Sincronização secundária - saldo para ${banco.nome}: ${banco.saldo}`);
       }
     }
-  }, [bancos, bancoSelecionado]);
+  }, [bancos, bancoSelecionado, saldoBanco]);
 
   const carregarBancos = async () => {
-    console.log('Dashboard: Carregando bancos...');
+    console.log('Dashboard: Carregando bancos do banco de dados...');
     const { data, error } = await supabase
       .from('bancos')
       .select('*')
@@ -93,25 +100,23 @@ const Dashboard = () => {
       .order('nome');
 
     if (!error && data) {
-      console.log('Dashboard: Bancos carregados do banco de dados:', data);
+      console.log('Dashboard: Bancos carregados:', data);
       
-      // IMPORTANTE: Não sobrescrever se acabamos de receber uma atualização por evento
-      // Verificar se há diferenças significativas antes de atualizar
+      // Verificar se há atualizações estruturais, mas preservar saldos atualizados por eventos
       setBancos(prevBancos => {
-        // Se não há bancos locais, usar os do banco de dados
         if (prevBancos.length === 0) {
+          // Primeira carga - usar dados do BD
           if (data.length > 0 && !bancoSelecionado) {
             setBancoSelecionado(data[0].id);
           }
           return data;
         }
         
-        // Se há bancos locais, verificar se há mudanças estruturais (novos bancos, etc)
-        // mas manter os saldos que foram atualizados por eventos
+        // Carga subsequente - preservar saldos locais que foram atualizados por eventos
         const bancosAtualizados = data.map(bancoDB => {
           const bancoLocal = prevBancos.find(b => b.id === bancoDB.id);
           if (bancoLocal) {
-            // Manter o saldo local se foi atualizado recentemente por evento
+            // Manter saldo local se existe (pode ter sido atualizado por evento)
             return { ...bancoDB, saldo: bancoLocal.saldo };
           }
           return bancoDB;
@@ -220,22 +225,27 @@ const Dashboard = () => {
 
       {/* Cards principais */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Saldo da Conta */}
-        <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 hover:shadow-lg transition-shadow">
+        {/* Saldo da Conta - MODELO APRIMORADO COM SINCRONIZAÇÃO INSTANTÂNEA */}
+        <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 hover:shadow-lg transition-shadow relative">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-blue-700">
               Saldo da Conta
+              {/* Indicador visual de sincronização */}
+              <div className="inline-block ml-2 w-2 h-2 bg-green-500 rounded-full animate-pulse" title="Sincronização em tempo real ativa"></div>
             </CardTitle>
             <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
               <Wallet className="w-4 h-4 text-blue-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-900">
+            <div className="text-2xl font-bold text-blue-900 transition-all duration-300">
               {formatCurrency(saldoBanco)}
             </div>
             <p className="text-xs text-blue-600 mt-1">
               {bancoAtual ? `${bancoAtual.nome} - ${bancoAtual.agencia}/${bancoAtual.conta}` : 'Selecione um banco'}
+            </p>
+            <p className="text-xs text-blue-500 mt-1 opacity-75">
+              Atualização instantânea ativa
             </p>
           </CardContent>
         </Card>
