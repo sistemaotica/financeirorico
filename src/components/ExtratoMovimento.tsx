@@ -14,6 +14,10 @@ const ExtratoMovimento = () => {
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
 
+  const formatarValor = (valor: number) => {
+    return `R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
   const gerarExtrato = async () => {
     if (!bancoId || !dataInicio || !dataFim) {
       return;
@@ -49,7 +53,7 @@ const ExtratoMovimento = () => {
               font-family: 'Arial', 'Helvetica', sans-serif;
               color: #2d3748;
               line-height: 1.3;
-              font-size: 10px;
+              font-size: 11px;
               background: white;
             }
             
@@ -69,44 +73,50 @@ const ExtratoMovimento = () => {
             
             .header h1 {
               color: #2b6cb0;
-              font-size: 18px;
+              font-size: 20px;
               font-weight: bold;
               margin-bottom: 5px;
+              text-align: center;
             }
             
             .header .subtitle {
               color: #718096;
-              font-size: 11px;
+              font-size: 12px;
               margin-bottom: 3px;
+              text-align: center;
             }
             
             .bank-info {
               background: #f7fafc;
               border: 1px solid #e2e8f0;
               border-radius: 6px;
-              padding: 12px;
+              padding: 8px;
               margin-bottom: 15px;
               page-break-inside: avoid;
             }
             
             .bank-info h3 {
               color: #2c5282;
-              font-size: 14px;
+              font-size: 12px;
               font-weight: bold;
-              margin-bottom: 8px;
+              margin-bottom: 6px;
+              text-align: center;
             }
             
             .bank-details {
-              display: grid;
-              grid-template-columns: repeat(2, 1fr);
+              display: flex;
+              justify-content: space-between;
               gap: 8px;
+              flex-wrap: wrap;
             }
             
             .bank-detail {
               background: white;
-              padding: 8px;
+              padding: 6px;
               border-radius: 4px;
               border-left: 2px solid #4299e1;
+              flex: 1;
+              min-width: 120px;
             }
             
             .detail-label {
@@ -114,12 +124,14 @@ const ExtratoMovimento = () => {
               color: #2d3748;
               font-size: 8px;
               text-transform: uppercase;
+              text-align: center;
             }
             
             .detail-value {
               color: #4a5568;
               font-size: 9px;
               margin-top: 2px;
+              text-align: center;
             }
 
             .conciliacao-section {
@@ -159,12 +171,14 @@ const ExtratoMovimento = () => {
               font-size: 7px;
               margin-bottom: 2px;
               text-transform: uppercase;
+              text-align: center;
             }
 
             .conciliacao-value {
               font-size: 9px;
               font-weight: bold;
               color: #276749;
+              text-align: center;
             }
 
             .valor-positivo {
@@ -186,29 +200,30 @@ const ExtratoMovimento = () => {
             table {
               width: 100%;
               border-collapse: collapse;
-              font-size: 8px;
+              font-size: 9px;
               page-break-inside: auto;
             }
             
             th {
               background: #4299e1;
               color: white;
-              padding: 6px 4px;
-              text-align: left;
+              padding: 8px 4px;
+              text-align: center;
               font-weight: bold;
-              font-size: 8px;
+              font-size: 9px;
               border-bottom: 1px solid #3182ce;
               page-break-inside: avoid;
               page-break-after: avoid;
             }
             
             td {
-              padding: 4px 3px;
+              padding: 6px 4px;
               border-bottom: 1px solid #e2e8f0;
-              font-size: 7px;
+              font-size: 8px;
               word-wrap: break-word;
               max-width: 100px;
-              vertical-align: top;
+              vertical-align: middle;
+              text-align: center;
             }
             
             tr {
@@ -225,7 +240,7 @@ const ExtratoMovimento = () => {
             }
             
             .text-right {
-              text-align: right;
+              text-align: center;
               font-weight: bold;
             }
             
@@ -301,19 +316,19 @@ const ExtratoMovimento = () => {
             /* Ajustes para dispositivos móveis */
             @media screen and (max-width: 768px) {
               body {
-                font-size: 8px;
-              }
-              
-              .header h1 {
-                font-size: 14px;
-              }
-              
-              .header .subtitle {
                 font-size: 9px;
               }
               
+              .header h1 {
+                font-size: 16px;
+              }
+              
+              .header .subtitle {
+                font-size: 10px;
+              }
+              
               .bank-details {
-                grid-template-columns: 1fr;
+                flex-direction: column;
               }
               
               .conciliacao-grid {
@@ -321,16 +336,16 @@ const ExtratoMovimento = () => {
               }
               
               table {
-                font-size: 6px;
+                font-size: 7px;
               }
               
               th, td {
-                padding: 2px;
-                font-size: 6px;
+                padding: 3px 2px;
+                font-size: 7px;
               }
               
               .bank-info h3 {
-                font-size: 12px;
+                font-size: 10px;
               }
               
               .conciliacao-title {
@@ -341,20 +356,20 @@ const ExtratoMovimento = () => {
             /* Configurações para tablets */
             @media screen and (min-width: 769px) and (max-width: 1024px) {
               body {
-                font-size: 9px;
+                font-size: 10px;
               }
               
               .header h1 {
-                font-size: 16px;
+                font-size: 18px;
               }
               
               table {
-                font-size: 7px;
+                font-size: 8px;
               }
               
               th, td {
-                padding: 3px;
-                font-size: 7px;
+                padding: 4px 3px;
+                font-size: 8px;
               }
               
               .conciliacao-grid {
@@ -407,25 +422,25 @@ const ExtratoMovimento = () => {
                 <div class="conciliacao-item">
                   <div class="conciliacao-label">Saldo Inicial</div>
                   <div class="conciliacao-value ${conciliacao.saldoInicial >= 0 ? 'valor-positivo' : 'valor-negativo'}">
-                    R$ ${conciliacao.saldoInicial.toFixed(2).replace('.', ',')}
+                    R$ ${conciliacao.saldoInicial.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                 </div>
                 <div class="conciliacao-item">
                   <div class="conciliacao-label">Total Entradas</div>
                   <div class="conciliacao-value valor-positivo">
-                    + R$ ${conciliacao.totalEntradas.toFixed(2).replace('.', ',')}
+                    + R$ ${conciliacao.totalEntradas.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                 </div>
                 <div class="conciliacao-item">
                   <div class="conciliacao-label">Total Saídas</div>
                   <div class="conciliacao-value valor-negativo">
-                    - R$ ${conciliacao.totalSaidas.toFixed(2).replace('.', ',')}
+                    - R$ ${conciliacao.totalSaidas.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                 </div>
                 <div class="conciliacao-item">
                   <div class="conciliacao-label">Saldo Final</div>
                   <div class="conciliacao-value ${conciliacao.saldoFinal >= 0 ? 'valor-positivo' : 'valor-negativo'}">
-                    R$ ${conciliacao.saldoFinal.toFixed(2).replace('.', ',')}
+                    R$ ${conciliacao.saldoFinal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                 </div>
                 <div class="conciliacao-item">
@@ -458,10 +473,10 @@ const ExtratoMovimento = () => {
                         <td style="word-break: break-word; overflow-wrap: break-word;">${mov.descricao}</td>
                         <td>${mov.numero_nota || '-'}</td>
                         <td class="text-right ${isCredito ? 'valor-credito' : 'valor-debito'}">
-                          ${isCredito ? '+' : '-'} R$ ${mov.valor.toFixed(2).replace('.', ',')}
+                          ${isCredito ? '+' : '-'} R$ ${mov.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
                         <td class="text-right ${mov.saldo_acumulado >= 0 ? 'saldo-positivo' : 'saldo-negativo'}">
-                          R$ ${mov.saldo_acumulado.toFixed(2).replace('.', ',')}
+                          R$ ${mov.saldo_acumulado.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
                       </tr>
                     `;
@@ -558,25 +573,25 @@ const ExtratoMovimento = () => {
                   <div className="text-center">
                     <div className="text-gray-600 text-xs font-medium">Saldo Inicial</div>
                     <div className={`font-bold text-sm md:text-base ${conciliacao.saldoInicial >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      R$ {conciliacao.saldoInicial.toFixed(2)}
+                      {formatarValor(conciliacao.saldoInicial)}
                     </div>
                   </div>
                   <div className="text-center">
                     <div className="text-gray-600 text-xs font-medium">Total Entradas</div>
                     <div className="font-bold text-green-600 text-sm md:text-base">
-                      + R$ {conciliacao.totalEntradas.toFixed(2)}
+                      + {formatarValor(conciliacao.totalEntradas)}
                     </div>
                   </div>
                   <div className="text-center">
                     <div className="text-gray-600 text-xs font-medium">Total Saídas</div>
                     <div className="font-bold text-red-600 text-sm md:text-base">
-                      - R$ {conciliacao.totalSaidas.toFixed(2)}
+                      - {formatarValor(conciliacao.totalSaidas)}
                     </div>
                   </div>
                   <div className="text-center">
                     <div className="text-gray-600 text-xs font-medium">Saldo Final</div>
                     <div className={`font-bold text-sm md:text-base ${conciliacao.saldoFinal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      R$ {conciliacao.saldoFinal.toFixed(2)}
+                      {formatarValor(conciliacao.saldoFinal)}
                     </div>
                   </div>
                   <div className="text-center col-span-2 md:col-span-1">

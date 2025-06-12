@@ -19,16 +19,18 @@ const RelatorioContas = () => {
   const [tipoDestino, setTipoDestino] = useState<'cliente' | 'fornecedor' | 'todos' | ''>('');
   const [destinoId, setDestinoId] = useState('');
 
+  const formatarValor = (valor: number) => {
+    return `R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
   const gerarRelatorio = () => {
     // Filtrar contas baseado nos critérios selecionados
     let contasFiltradas = [...contas];
 
-    // Filtro por tipo (pagar/receber)
     if (tipoRelatorio) {
       contasFiltradas = contasFiltradas.filter(conta => conta.tipo === tipoRelatorio);
     }
 
-    // Filtro por status
     if (statusRelatorio) {
       if (statusRelatorio === 'aberto') {
         contasFiltradas = contasFiltradas.filter(conta => conta.valor_baixa < conta.valor);
@@ -37,12 +39,10 @@ const RelatorioContas = () => {
       }
     }
 
-    // Filtro por tipo de destino
     if (tipoDestino) {
       contasFiltradas = contasFiltradas.filter(conta => conta.destino_tipo === tipoDestino);
     }
 
-    // Filtro por destino específico
     if (destinoId) {
       if (tipoDestino === 'cliente') {
         contasFiltradas = contasFiltradas.filter(conta => conta.cliente_id === destinoId);
@@ -51,7 +51,6 @@ const RelatorioContas = () => {
       }
     }
 
-    // Filtro por data
     if (dataInicio && dataFim) {
       contasFiltradas = contasFiltradas.filter(conta => {
         const dataComparacao = tipoData === 'baixa' ? conta.data_pagamento : conta.data_vencimento;
@@ -63,12 +62,10 @@ const RelatorioContas = () => {
       });
     }
 
-    // Gerar PDF em nova aba
     gerarPDF(contasFiltradas);
   };
 
   const gerarPDF = (contasFiltradas: Conta[]) => {
-    // Criar HTML para o relatório com design moderno
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -91,9 +88,9 @@ const RelatorioContas = () => {
             body { 
               font-family: 'Arial', 'Helvetica', sans-serif;
               color: #2d3748;
-              line-height: 1.2;
+              line-height: 1.3;
               background: white;
-              font-size: 9px;
+              font-size: 11px;
             }
             
             .container {
@@ -112,15 +109,17 @@ const RelatorioContas = () => {
             
             .header h1 {
               color: #2b6cb0;
-              font-size: 20px;
+              font-size: 22px;
               font-weight: 700;
               margin-bottom: 5px;
+              text-align: center;
             }
             
             .header .subtitle {
               color: #718096;
-              font-size: 12px;
+              font-size: 13px;
               font-weight: 500;
+              text-align: center;
             }
             
             .filters {
@@ -134,9 +133,10 @@ const RelatorioContas = () => {
             
             .filters h3 {
               color: #2c5282;
-              font-size: 14px;
+              font-size: 16px;
               font-weight: 600;
               margin-bottom: 10px;
+              text-align: center;
             }
             
             .filter-grid {
@@ -147,21 +147,24 @@ const RelatorioContas = () => {
             
             .filter-item {
               background: white;
-              padding: 8px;
+              padding: 10px;
               border-radius: 4px;
               border-left: 3px solid #4299e1;
+              text-align: center;
             }
             
             .filter-label {
               font-weight: 600;
               color: #2d3748;
-              font-size: 8px;
+              font-size: 10px;
+              text-align: center;
             }
             
             .filter-value {
               color: #4a5568;
-              font-size: 8px;
+              font-size: 10px;
               margin-top: 2px;
+              text-align: center;
             }
             
             .table-container {
@@ -174,17 +177,17 @@ const RelatorioContas = () => {
             table {
               width: 100%;
               border-collapse: collapse;
-              font-size: 7px;
+              font-size: 9px;
               page-break-inside: auto;
             }
             
             th {
               background: #4299e1;
               color: white;
-              padding: 8px 4px;
-              text-align: left;
+              padding: 10px 6px;
+              text-align: center;
               font-weight: 600;
-              font-size: 7px;
+              font-size: 9px;
               text-transform: uppercase;
               letter-spacing: 0.3px;
               page-break-inside: avoid;
@@ -192,12 +195,13 @@ const RelatorioContas = () => {
             }
             
             td {
-              padding: 6px 4px;
+              padding: 8px 6px;
               border-bottom: 1px solid #e2e8f0;
-              font-size: 7px;
+              font-size: 9px;
               word-wrap: break-word;
               max-width: 80px;
-              vertical-align: top;
+              vertical-align: middle;
+              text-align: center;
             }
             
             tr {
@@ -214,7 +218,7 @@ const RelatorioContas = () => {
             }
             
             .text-right {
-              text-align: right;
+              text-align: center;
               font-weight: 600;
             }
             
@@ -230,12 +234,13 @@ const RelatorioContas = () => {
               background: #2d3748 !important;
               color: white !important;
               font-weight: 700;
-              font-size: 8px;
+              font-size: 10px;
             }
             
             .total-row td {
               border-bottom: none;
-              padding: 10px 4px;
+              padding: 12px 6px;
+              text-align: center;
             }
             
             .summary-cards {
@@ -248,30 +253,33 @@ const RelatorioContas = () => {
             .summary-card {
               background: #667eea;
               color: white;
-              padding: 12px;
+              padding: 15px;
               border-radius: 6px;
               text-align: center;
             }
             
             .summary-card h4 {
-              font-size: 8px;
+              font-size: 10px;
               font-weight: 600;
-              margin-bottom: 4px;
+              margin-bottom: 6px;
               opacity: 0.9;
+              text-align: center;
             }
             
             .summary-card .value {
-              font-size: 12px;
+              font-size: 14px;
               font-weight: 700;
+              text-align: center;
             }
             
             .status-badge {
               display: inline-block;
-              padding: 2px 4px;
+              padding: 3px 6px;
               border-radius: 3px;
-              font-size: 6px;
+              font-size: 8px;
               font-weight: 600;
               text-transform: uppercase;
+              text-align: center;
             }
             
             .status-aberto {
@@ -327,15 +335,15 @@ const RelatorioContas = () => {
               }
               
               body {
-                font-size: 7px;
+                font-size: 9px;
               }
               
               .header h1 {
-                font-size: 16px;
+                font-size: 18px;
               }
               
               .header .subtitle {
-                font-size: 10px;
+                font-size: 11px;
               }
               
               .filter-grid {
@@ -343,12 +351,12 @@ const RelatorioContas = () => {
               }
               
               table {
-                font-size: 6px;
+                font-size: 7px;
               }
               
               th, td {
-                padding: 3px 2px;
-                font-size: 6px;
+                padding: 4px 3px;
+                font-size: 7px;
               }
               
               .summary-cards {
@@ -356,28 +364,28 @@ const RelatorioContas = () => {
               }
               
               .status-badge {
-                font-size: 5px;
-                padding: 1px 3px;
+                font-size: 6px;
+                padding: 2px 4px;
               }
             }
             
             /* Configurações para tablets */
             @media screen and (min-width: 769px) and (max-width: 1024px) {
               body {
-                font-size: 8px;
+                font-size: 10px;
               }
               
               .header h1 {
-                font-size: 18px;
+                font-size: 20px;
               }
               
               table {
-                font-size: 6px;
+                font-size: 8px;
               }
               
               th, td {
-                padding: 4px 3px;
-                font-size: 6px;
+                padding: 6px 4px;
+                font-size: 8px;
               }
               
               .filter-grid {
@@ -448,9 +456,9 @@ const RelatorioContas = () => {
                         <td style="word-break: break-word; overflow-wrap: break-word;">${conta.referencia}</td>
                         <td>${conta.parcela_numero}/${conta.parcela_total}</td>
                         <td>${conta.numero_nota || '-'}</td>
-                        <td class="text-right">R$ ${conta.valor.toFixed(2).replace('.', ',')}</td>
-                        <td class="text-right valor-positivo">R$ ${(conta.valor_baixa || 0).toFixed(2).replace('.', ',')}</td>
-                        <td class="text-right ${saldo > 0 ? 'valor-negativo' : 'valor-positivo'}">R$ ${saldo.toFixed(2).replace('.', ',')}</td>
+                        <td class="text-right">R$ ${conta.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td class="text-right valor-positivo">R$ ${(conta.valor_baixa || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td class="text-right ${saldo > 0 ? 'valor-negativo' : 'valor-positivo'}">R$ ${saldo.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         <td><span class="status-badge status-${status}">${status === 'aberto' ? 'Aberto' : 'Pago'}</span></td>
                       </tr>
                     `;
@@ -459,9 +467,9 @@ const RelatorioContas = () => {
                 <tfoot>
                   <tr class="total-row">
                     <td colspan="5"><strong>🎯 TOTAIS GERAIS</strong></td>
-                    <td class="text-right"><strong>R$ ${contasFiltradas.reduce((sum, conta) => sum + conta.valor, 0).toFixed(2).replace('.', ',')}</strong></td>
-                    <td class="text-right"><strong>R$ ${contasFiltradas.reduce((sum, conta) => sum + (conta.valor_baixa || 0), 0).toFixed(2).replace('.', ',')}</strong></td>
-                    <td class="text-right"><strong>R$ ${contasFiltradas.reduce((sum, conta) => sum + (conta.valor - (conta.valor_baixa || 0)), 0).toFixed(2).replace('.', ',')}</strong></td>
+                    <td class="text-right"><strong>R$ ${contasFiltradas.reduce((sum, conta) => sum + conta.valor, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
+                    <td class="text-right"><strong>R$ ${contasFiltradas.reduce((sum, conta) => sum + (conta.valor_baixa || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
+                    <td class="text-right"><strong>R$ ${contasFiltradas.reduce((sum, conta) => sum + (conta.valor - (conta.valor_baixa || 0)), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
                     <td class="text-right"><strong>${contasFiltradas.length} contas</strong></td>
                   </tr>
                 </tfoot>
@@ -475,11 +483,11 @@ const RelatorioContas = () => {
               </div>
               <div class="summary-card">
                 <h4>Valor Total</h4>
-                <div class="value">R$ ${contasFiltradas.reduce((sum, conta) => sum + conta.valor, 0).toFixed(2).replace('.', ',')}</div>
+                <div class="value">R$ ${contasFiltradas.reduce((sum, conta) => sum + conta.valor, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
               </div>
               <div class="summary-card">
                 <h4>Saldo Pendente</h4>
-                <div class="value">R$ ${contasFiltradas.reduce((sum, conta) => sum + (conta.valor - (conta.valor_baixa || 0)), 0).toFixed(2).replace('.', ',')}</div>
+                <div class="value">R$ ${contasFiltradas.reduce((sum, conta) => sum + (conta.valor - (conta.valor_baixa || 0)), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
               </div>
             </div>
           </div>
@@ -487,13 +495,11 @@ const RelatorioContas = () => {
       </html>
     `;
 
-    // Abrir nova aba com o relatório
     const novaAba = window.open('', '_blank');
     if (novaAba) {
       novaAba.document.write(htmlContent);
       novaAba.document.close();
       
-      // Aguardar carregamento e imprimir/salvar como PDF
       setTimeout(() => {
         novaAba.print();
       }, 500);
@@ -544,7 +550,6 @@ const RelatorioContas = () => {
             </div>
           </div>
 
-          {/* Linha 2: Tipo de Data e Período */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="tipo-data">Tipo de Data *</Label>
@@ -580,7 +585,6 @@ const RelatorioContas = () => {
             </div>
           </div>
 
-          {/* Linha 3: Tipo de Destino e Destino */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="tipo-destino">Tipo de Destino</Label>
@@ -621,7 +625,6 @@ const RelatorioContas = () => {
             )}
           </div>
 
-          {/* Botão Gerar Relatório */}
           <div className="flex justify-center">
             <Button 
               onClick={gerarRelatorio}
