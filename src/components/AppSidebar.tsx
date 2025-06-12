@@ -74,7 +74,7 @@ const AppSidebar = ({ currentPage, onNavigate, onLogout }: AppSidebarProps) => {
             <DollarSign className="w-4 h-4 text-white" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">FinWise</h2>
+            <h2 className="text-lg font-semibold text-gray-900">RICCO</h2>
             <p className="text-xs text-gray-600">Sistema Financeiro</p>
           </div>
         </div>
