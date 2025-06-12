@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -73,11 +74,12 @@ const RelatorioContas = () => {
       <html>
         <head>
           <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>Relatório de Contas</title>
           <style>
             @page {
               size: A4 landscape;
-              margin: 15mm;
+              margin: 8mm 6mm 8mm 6mm;
             }
             
             * {
@@ -87,136 +89,128 @@ const RelatorioContas = () => {
             }
             
             body { 
-              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+              font-family: 'Arial', 'Helvetica', sans-serif;
               color: #2d3748;
-              line-height: 1.4;
-              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-              min-height: 100vh;
+              line-height: 1.2;
+              background: white;
+              font-size: 9px;
             }
             
             .container {
-              background: white;
-              border-radius: 12px;
-              box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-              padding: 30px;
-              margin: 20px auto;
+              width: 100%;
               max-width: 100%;
+              padding: 0;
             }
             
             .header {
               text-align: center;
-              margin-bottom: 30px;
-              border-bottom: 3px solid #4299e1;
-              padding-bottom: 20px;
+              margin-bottom: 15px;
+              border-bottom: 2px solid #4299e1;
+              padding-bottom: 10px;
+              page-break-inside: avoid;
             }
             
             .header h1 {
               color: #2b6cb0;
-              font-size: 32px;
+              font-size: 20px;
               font-weight: 700;
-              margin-bottom: 8px;
-              text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+              margin-bottom: 5px;
             }
             
             .header .subtitle {
               color: #718096;
-              font-size: 16px;
+              font-size: 12px;
               font-weight: 500;
             }
             
             .filters {
-              background: linear-gradient(135deg, #ebf8ff 0%, #e6fffa 100%);
+              background: #ebf8ff;
               border: 1px solid #bee3f8;
-              border-radius: 12px;
-              padding: 20px;
-              margin-bottom: 25px;
-              box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+              border-radius: 6px;
+              padding: 12px;
+              margin-bottom: 15px;
+              page-break-inside: avoid;
             }
             
             .filters h3 {
               color: #2c5282;
-              font-size: 18px;
+              font-size: 14px;
               font-weight: 600;
-              margin-bottom: 15px;
-              display: flex;
-              align-items: center;
-            }
-            
-            .filters h3:before {
-              content: "🔍";
-              margin-right: 8px;
-              font-size: 16px;
+              margin-bottom: 10px;
             }
             
             .filter-grid {
               display: grid;
-              grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-              gap: 15px;
+              grid-template-columns: repeat(4, 1fr);
+              gap: 10px;
             }
             
             .filter-item {
               background: white;
-              padding: 12px;
-              border-radius: 8px;
-              border-left: 4px solid #4299e1;
+              padding: 8px;
+              border-radius: 4px;
+              border-left: 3px solid #4299e1;
             }
             
             .filter-label {
               font-weight: 600;
               color: #2d3748;
-              font-size: 14px;
+              font-size: 8px;
             }
             
             .filter-value {
               color: #4a5568;
-              font-size: 14px;
-              margin-top: 4px;
+              font-size: 8px;
+              margin-top: 2px;
             }
             
             .table-container {
               background: white;
-              border-radius: 12px;
+              border-radius: 6px;
               overflow: hidden;
-              box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+              margin-bottom: 15px;
             }
             
             table {
               width: 100%;
               border-collapse: collapse;
-              font-size: 12px;
+              font-size: 7px;
+              page-break-inside: auto;
             }
             
             th {
-              background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+              background: #4299e1;
               color: white;
-              padding: 15px 12px;
+              padding: 8px 4px;
               text-align: left;
               font-weight: 600;
-              font-size: 13px;
+              font-size: 7px;
               text-transform: uppercase;
-              letter-spacing: 0.5px;
-            }
-            
-            th:first-child {
-              border-top-left-radius: 12px;
-            }
-            
-            th:last-child {
-              border-top-right-radius: 12px;
+              letter-spacing: 0.3px;
+              page-break-inside: avoid;
+              page-break-after: avoid;
             }
             
             td {
-              padding: 12px;
+              padding: 6px 4px;
               border-bottom: 1px solid #e2e8f0;
-              font-size: 12px;
+              font-size: 7px;
+              word-wrap: break-word;
+              max-width: 80px;
+              vertical-align: top;
+            }
+            
+            tr {
+              page-break-inside: avoid;
+              page-break-after: auto;
+            }
+            
+            tbody tr {
+              page-break-inside: avoid;
             }
             
             tr:nth-child(even) {
               background-color: #f7fafc;
-            }
-            
-            tr:hover {
-              background-color: #edf2f7;
             }
             
             .text-right {
@@ -233,50 +227,49 @@ const RelatorioContas = () => {
             }
             
             .total-row {
-              background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%) !important;
+              background: #2d3748 !important;
               color: white !important;
               font-weight: 700;
-              font-size: 14px;
+              font-size: 8px;
             }
             
             .total-row td {
               border-bottom: none;
-              padding: 18px 12px;
+              padding: 10px 4px;
             }
             
             .summary-cards {
               display: grid;
               grid-template-columns: repeat(3, 1fr);
-              gap: 20px;
-              margin-top: 25px;
+              gap: 15px;
+              margin-top: 15px;
             }
             
             .summary-card {
-              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              background: #667eea;
               color: white;
-              padding: 20px;
-              border-radius: 12px;
+              padding: 12px;
+              border-radius: 6px;
               text-align: center;
-              box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
             }
             
             .summary-card h4 {
-              font-size: 14px;
+              font-size: 8px;
               font-weight: 600;
-              margin-bottom: 8px;
+              margin-bottom: 4px;
               opacity: 0.9;
             }
             
             .summary-card .value {
-              font-size: 24px;
+              font-size: 12px;
               font-weight: 700;
             }
             
             .status-badge {
               display: inline-block;
-              padding: 4px 8px;
-              border-radius: 6px;
-              font-size: 11px;
+              padding: 2px 4px;
+              border-radius: 3px;
+              font-size: 6px;
               font-weight: 600;
               text-transform: uppercase;
             }
@@ -291,14 +284,104 @@ const RelatorioContas = () => {
               color: #2f855a;
             }
             
+            /* Configurações específicas para impressão */
             @media print {
               body {
-                background: white !important;
-              }
-              .container {
-                box-shadow: none;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
                 margin: 0;
-                padding: 15px;
+                padding: 0;
+              }
+              
+              .container {
+                padding: 0;
+                margin: 0;
+              }
+              
+              .table-container {
+                page-break-inside: auto;
+              }
+              
+              tr {
+                page-break-inside: avoid;
+              }
+              
+              thead {
+                display: table-header-group;
+              }
+              
+              tfoot {
+                display: table-footer-group;
+              }
+              
+              tbody {
+                display: table-row-group;
+              }
+            }
+            
+            /* Ajustes para dispositivos móveis */
+            @media screen and (max-width: 768px) {
+              @page {
+                size: A4 portrait;
+                margin: 10mm 8mm 10mm 8mm;
+              }
+              
+              body {
+                font-size: 7px;
+              }
+              
+              .header h1 {
+                font-size: 16px;
+              }
+              
+              .header .subtitle {
+                font-size: 10px;
+              }
+              
+              .filter-grid {
+                grid-template-columns: repeat(2, 1fr);
+              }
+              
+              table {
+                font-size: 6px;
+              }
+              
+              th, td {
+                padding: 3px 2px;
+                font-size: 6px;
+              }
+              
+              .summary-cards {
+                grid-template-columns: 1fr;
+              }
+              
+              .status-badge {
+                font-size: 5px;
+                padding: 1px 3px;
+              }
+            }
+            
+            /* Configurações para tablets */
+            @media screen and (min-width: 769px) and (max-width: 1024px) {
+              body {
+                font-size: 8px;
+              }
+              
+              .header h1 {
+                font-size: 18px;
+              }
+              
+              table {
+                font-size: 6px;
+              }
+              
+              th, td {
+                padding: 4px 3px;
+                font-size: 6px;
+              }
+              
+              .filter-grid {
+                grid-template-columns: repeat(3, 1fr);
               }
             }
           </style>
@@ -318,7 +401,7 @@ const RelatorioContas = () => {
             </div>
             
             <div class="filters">
-              <h3>Filtros Aplicados</h3>
+              <h3>🔍 Filtros Aplicados</h3>
               <div class="filter-grid">
                 <div class="filter-item">
                   <div class="filter-label">Tipo de Conta</div>
@@ -343,15 +426,15 @@ const RelatorioContas = () => {
               <table>
                 <thead>
                   <tr>
-                    <th>📅 Vencimento</th>
-                    <th>👤 Cliente/Fornecedor</th>
-                    <th>📝 Referência</th>
-                    <th>🔢 Parcelas</th>
-                    <th>📄 Nº Nota</th>
-                    <th>💰 Valor Total</th>
-                    <th>✅ Valor Baixado</th>
-                    <th>📊 Saldo</th>
-                    <th>🏷️ Status</th>
+                    <th style="width: 10%;">📅 Venc.</th>
+                    <th style="width: 20%;">👤 Cliente/Fornec.</th>
+                    <th style="width: 20%;">📝 Referência</th>
+                    <th style="width: 8%;">🔢 Parc.</th>
+                    <th style="width: 10%;">📄 Nº Nota</th>
+                    <th style="width: 10%;">💰 V. Total</th>
+                    <th style="width: 10%;">✅ V. Baixado</th>
+                    <th style="width: 10%;">📊 Saldo</th>
+                    <th style="width: 7%;">🏷️ Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -361,14 +444,14 @@ const RelatorioContas = () => {
                     return `
                       <tr>
                         <td>${new Date(conta.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
-                        <td><strong>${conta.destino_tipo === 'cliente' ? conta.clientes?.nome || 'N/A' : conta.fornecedores?.nome || 'N/A'}</strong></td>
-                        <td>${conta.referencia}</td>
+                        <td style="word-break: break-word; overflow-wrap: break-word;"><strong>${conta.destino_tipo === 'cliente' ? conta.clientes?.nome || 'N/A' : conta.fornecedores?.nome || 'N/A'}</strong></td>
+                        <td style="word-break: break-word; overflow-wrap: break-word;">${conta.referencia}</td>
                         <td>${conta.parcela_numero}/${conta.parcela_total}</td>
                         <td>${conta.numero_nota || '-'}</td>
                         <td class="text-right">R$ ${conta.valor.toFixed(2).replace('.', ',')}</td>
                         <td class="text-right valor-positivo">R$ ${(conta.valor_baixa || 0).toFixed(2).replace('.', ',')}</td>
                         <td class="text-right ${saldo > 0 ? 'valor-negativo' : 'valor-positivo'}">R$ ${saldo.toFixed(2).replace('.', ',')}</td>
-                        <td><span class="status-badge status-${status}">${status === 'aberto' ? 'Em Aberto' : 'Pago'}</span></td>
+                        <td><span class="status-badge status-${status}">${status === 'aberto' ? 'Aberto' : 'Pago'}</span></td>
                       </tr>
                     `;
                   }).join('')}

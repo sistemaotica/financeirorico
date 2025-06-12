@@ -31,11 +31,12 @@ const ExtratoMovimento = () => {
       <html>
         <head>
           <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>Extrato do Movimento</title>
           <style>
             @page {
               size: A4 portrait;
-              margin: 15mm;
+              margin: 10mm 8mm 10mm 8mm;
             }
             
             * {
@@ -45,118 +46,123 @@ const ExtratoMovimento = () => {
             }
             
             body { 
-              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+              font-family: 'Arial', 'Helvetica', sans-serif;
               color: #2d3748;
-              line-height: 1.4;
-              font-size: 12px;
+              line-height: 1.3;
+              font-size: 10px;
+              background: white;
             }
             
             .container {
               width: 100%;
               max-width: 100%;
+              padding: 0;
             }
             
             .header {
               text-align: center;
-              margin-bottom: 20px;
-              border-bottom: 3px solid #4299e1;
-              padding-bottom: 15px;
+              margin-bottom: 15px;
+              border-bottom: 2px solid #4299e1;
+              padding-bottom: 10px;
+              page-break-inside: avoid;
             }
             
             .header h1 {
               color: #2b6cb0;
-              font-size: 24px;
+              font-size: 18px;
               font-weight: bold;
-              margin-bottom: 8px;
+              margin-bottom: 5px;
             }
             
             .header .subtitle {
               color: #718096;
-              font-size: 14px;
-              margin-bottom: 5px;
+              font-size: 11px;
+              margin-bottom: 3px;
             }
             
             .bank-info {
               background: #f7fafc;
               border: 1px solid #e2e8f0;
-              border-radius: 8px;
-              padding: 15px;
-              margin-bottom: 20px;
+              border-radius: 6px;
+              padding: 12px;
+              margin-bottom: 15px;
+              page-break-inside: avoid;
             }
             
             .bank-info h3 {
               color: #2c5282;
-              font-size: 16px;
+              font-size: 14px;
               font-weight: bold;
-              margin-bottom: 10px;
+              margin-bottom: 8px;
             }
             
             .bank-details {
               display: grid;
               grid-template-columns: repeat(2, 1fr);
-              gap: 10px;
+              gap: 8px;
             }
             
             .bank-detail {
               background: white;
-              padding: 10px;
-              border-radius: 6px;
-              border-left: 3px solid #4299e1;
+              padding: 8px;
+              border-radius: 4px;
+              border-left: 2px solid #4299e1;
             }
             
             .detail-label {
               font-weight: bold;
               color: #2d3748;
-              font-size: 11px;
+              font-size: 8px;
               text-transform: uppercase;
             }
             
             .detail-value {
               color: #4a5568;
-              font-size: 12px;
-              margin-top: 3px;
+              font-size: 9px;
+              margin-top: 2px;
             }
 
             .conciliacao-section {
               background: #f0fff4;
               border: 1px solid #9ae6b4;
-              border-radius: 8px;
-              padding: 15px;
-              margin-bottom: 20px;
+              border-radius: 6px;
+              padding: 12px;
+              margin-bottom: 15px;
+              page-break-inside: avoid;
             }
 
             .conciliacao-title {
               color: #276749;
-              font-size: 16px;
+              font-size: 14px;
               font-weight: bold;
-              margin-bottom: 15px;
+              margin-bottom: 10px;
               text-align: center;
             }
 
             .conciliacao-grid {
               display: grid;
-              grid-template-columns: repeat(3, 1fr);
-              gap: 10px;
+              grid-template-columns: repeat(5, 1fr);
+              gap: 8px;
             }
 
             .conciliacao-item {
               background: white;
-              padding: 10px;
-              border-radius: 6px;
+              padding: 8px;
+              border-radius: 4px;
               text-align: center;
-              border-left: 3px solid #48bb78;
+              border-left: 2px solid #48bb78;
             }
 
             .conciliacao-label {
               font-weight: bold;
               color: #2d3748;
-              font-size: 10px;
-              margin-bottom: 3px;
+              font-size: 7px;
+              margin-bottom: 2px;
               text-transform: uppercase;
             }
 
             .conciliacao-value {
-              font-size: 12px;
+              font-size: 9px;
               font-weight: bold;
               color: #276749;
             }
@@ -171,38 +177,47 @@ const ExtratoMovimento = () => {
             
             .table-container {
               background: white;
-              border-radius: 8px;
+              border-radius: 6px;
               overflow: hidden;
-              margin-bottom: 20px;
+              margin-bottom: 15px;
               border: 1px solid #e2e8f0;
             }
             
             table {
               width: 100%;
               border-collapse: collapse;
-              font-size: 10px;
+              font-size: 8px;
+              page-break-inside: auto;
             }
             
             th {
               background: #4299e1;
               color: white;
-              padding: 8px 6px;
+              padding: 6px 4px;
               text-align: left;
               font-weight: bold;
-              font-size: 10px;
+              font-size: 8px;
               border-bottom: 1px solid #3182ce;
+              page-break-inside: avoid;
+              page-break-after: avoid;
             }
             
             td {
-              padding: 6px;
+              padding: 4px 3px;
               border-bottom: 1px solid #e2e8f0;
-              font-size: 9px;
+              font-size: 7px;
               word-wrap: break-word;
+              max-width: 100px;
+              vertical-align: top;
             }
             
             tr {
               page-break-inside: avoid;
               page-break-after: auto;
+            }
+            
+            tbody tr {
+              page-break-inside: avoid;
             }
             
             tr:nth-child(even) {
@@ -235,26 +250,47 @@ const ExtratoMovimento = () => {
             }
             
             .footer {
-              margin-top: 20px;
+              margin-top: 15px;
               text-align: center;
-              font-size: 10px;
+              font-size: 7px;
               color: #718096;
               border-top: 1px solid #e2e8f0;
-              padding-top: 10px;
+              padding-top: 8px;
+              page-break-inside: avoid;
             }
             
+            /* Configurações específicas para impressão */
             @media print {
               body {
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
+                margin: 0;
+                padding: 0;
+              }
+              
+              .container {
+                padding: 0;
+                margin: 0;
               }
               
               .table-container {
-                page-break-inside: avoid;
+                page-break-inside: auto;
               }
               
               tr {
                 page-break-inside: avoid;
+              }
+              
+              thead {
+                display: table-header-group;
+              }
+              
+              tfoot {
+                display: table-footer-group;
+              }
+              
+              tbody {
+                display: table-row-group;
               }
               
               .conciliacao-grid {
@@ -262,7 +298,20 @@ const ExtratoMovimento = () => {
               }
             }
             
+            /* Ajustes para dispositivos móveis */
             @media screen and (max-width: 768px) {
+              body {
+                font-size: 8px;
+              }
+              
+              .header h1 {
+                font-size: 14px;
+              }
+              
+              .header .subtitle {
+                font-size: 9px;
+              }
+              
               .bank-details {
                 grid-template-columns: 1fr;
               }
@@ -272,11 +321,44 @@ const ExtratoMovimento = () => {
               }
               
               table {
-                font-size: 8px;
+                font-size: 6px;
               }
               
               th, td {
-                padding: 4px;
+                padding: 2px;
+                font-size: 6px;
+              }
+              
+              .bank-info h3 {
+                font-size: 12px;
+              }
+              
+              .conciliacao-title {
+                font-size: 12px;
+              }
+            }
+            
+            /* Configurações para tablets */
+            @media screen and (min-width: 769px) and (max-width: 1024px) {
+              body {
+                font-size: 9px;
+              }
+              
+              .header h1 {
+                font-size: 16px;
+              }
+              
+              table {
+                font-size: 7px;
+              }
+              
+              th, td {
+                padding: 3px;
+                font-size: 7px;
+              }
+              
+              .conciliacao-grid {
+                grid-template-columns: repeat(3, 1fr);
               }
             }
           </style>
@@ -361,8 +443,8 @@ const ExtratoMovimento = () => {
                 <thead>
                   <tr>
                     <th style="width: 12%;">Data</th>
-                    <th style="width: 35%;">Descrição</th>
-                    <th style="width: 15%;">Nº Nota</th>
+                    <th style="width: 45%;">Descrição</th>
+                    <th style="width: 13%;">Nº Nota</th>
                     <th style="width: 15%;">Valor</th>
                     <th style="width: 15%;">Saldo</th>
                   </tr>
@@ -373,7 +455,7 @@ const ExtratoMovimento = () => {
                     return `
                       <tr>
                         <td>${new Date(mov.data + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
-                        <td style="word-break: break-word;">${mov.descricao}</td>
+                        <td style="word-break: break-word; overflow-wrap: break-word;">${mov.descricao}</td>
                         <td>${mov.numero_nota || '-'}</td>
                         <td class="text-right ${isCredito ? 'valor-credito' : 'valor-debito'}">
                           ${isCredito ? '+' : '-'} R$ ${mov.valor.toFixed(2).replace('.', ',')}

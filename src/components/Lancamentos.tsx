@@ -173,11 +173,12 @@ const Lancamentos = () => {
       <html>
         <head>
           <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>Relatório de Lançamentos</title>
           <style>
             @page {
               size: A4 portrait;
-              margin: 15mm;
+              margin: 10mm 8mm 10mm 8mm;
             }
             
             * {
@@ -187,56 +188,61 @@ const Lancamentos = () => {
             }
             
             body { 
-              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-              font-size: 12px;
-              line-height: 1.4;
+              font-family: 'Arial', 'Helvetica', sans-serif;
+              font-size: 10px;
+              line-height: 1.3;
               color: #2d3748;
+              background: white;
             }
             
             .container {
               width: 100%;
               max-width: 100%;
+              padding: 0;
             }
             
             .header {
               text-align: center;
-              margin-bottom: 20px;
-              padding-bottom: 15px;
-              border-bottom: 3px solid #4299e1;
+              margin-bottom: 15px;
+              padding-bottom: 10px;
+              border-bottom: 2px solid #4299e1;
+              page-break-inside: avoid;
             }
             
             .header h1 {
               color: #2b6cb0;
-              font-size: 24px;
+              font-size: 18px;
               font-weight: bold;
-              margin-bottom: 8px;
+              margin-bottom: 5px;
             }
             
             .header .subtitle {
               color: #718096;
-              font-size: 14px;
-              margin-bottom: 5px;
+              font-size: 11px;
+              margin-bottom: 3px;
             }
             
             .info-section {
               background: #f7fafc;
               border: 1px solid #e2e8f0;
-              border-radius: 8px;
-              padding: 15px;
-              margin-bottom: 20px;
+              border-radius: 4px;
+              padding: 10px;
+              margin-bottom: 15px;
+              page-break-inside: avoid;
             }
             
             .info-grid {
               display: grid;
               grid-template-columns: repeat(2, 1fr);
-              gap: 10px;
+              gap: 8px;
             }
             
             .info-item {
               display: flex;
               justify-content: space-between;
-              padding: 5px 0;
+              padding: 3px 0;
               border-bottom: 1px solid #e2e8f0;
+              font-size: 9px;
             }
             
             .info-label {
@@ -250,37 +256,45 @@ const Lancamentos = () => {
             
             .table-container {
               width: 100%;
-              margin-bottom: 20px;
+              margin-bottom: 15px;
+              overflow: hidden;
             }
             
             table {
               width: 100%;
               border-collapse: collapse;
-              font-size: 10px;
-              page-break-inside: avoid;
+              font-size: 8px;
+              page-break-inside: auto;
             }
             
             th {
               background: #4299e1;
               color: white;
-              padding: 8px 6px;
+              padding: 6px 4px;
               text-align: left;
               font-weight: bold;
-              font-size: 10px;
+              font-size: 8px;
               border: 1px solid #3182ce;
+              page-break-inside: avoid;
+              page-break-after: avoid;
             }
             
             td {
-              padding: 6px;
+              padding: 4px 3px;
               border: 1px solid #e2e8f0;
-              font-size: 9px;
+              font-size: 7px;
               word-wrap: break-word;
-              max-width: 150px;
+              max-width: 120px;
+              vertical-align: top;
             }
             
             tr {
               page-break-inside: avoid;
               page-break-after: auto;
+            }
+            
+            tbody tr {
+              page-break-inside: avoid;
             }
             
             tr:nth-child(even) {
@@ -302,9 +316,9 @@ const Lancamentos = () => {
             }
             
             .tipo-badge {
-              padding: 2px 6px;
-              border-radius: 4px;
-              font-size: 8px;
+              padding: 1px 4px;
+              border-radius: 2px;
+              font-size: 6px;
               font-weight: bold;
               text-transform: uppercase;
             }
@@ -320,40 +334,104 @@ const Lancamentos = () => {
             }
             
             .footer {
-              margin-top: 20px;
+              margin-top: 15px;
               text-align: center;
-              font-size: 10px;
+              font-size: 8px;
               color: #718096;
               border-top: 1px solid #e2e8f0;
-              padding-top: 10px;
+              padding-top: 8px;
+              page-break-inside: avoid;
             }
             
+            /* Configurações específicas para impressão */
             @media print {
               body {
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
+                margin: 0;
+                padding: 0;
+              }
+              
+              .container {
+                padding: 0;
+                margin: 0;
               }
               
               .table-container {
-                page-break-inside: avoid;
+                page-break-inside: auto;
               }
               
               tr {
                 page-break-inside: avoid;
               }
+              
+              thead {
+                display: table-header-group;
+              }
+              
+              tfoot {
+                display: table-footer-group;
+              }
+              
+              tbody {
+                display: table-row-group;
+              }
+              
+              .page-break {
+                page-break-before: always;
+              }
             }
             
+            /* Ajustes para dispositivos móveis */
             @media screen and (max-width: 768px) {
+              body {
+                font-size: 8px;
+              }
+              
+              .header h1 {
+                font-size: 14px;
+              }
+              
+              .header .subtitle {
+                font-size: 9px;
+              }
+              
               .info-grid {
                 grid-template-columns: 1fr;
               }
               
               table {
-                font-size: 8px;
+                font-size: 6px;
               }
               
               th, td {
-                padding: 4px;
+                padding: 2px;
+                font-size: 6px;
+              }
+              
+              .tipo-badge {
+                font-size: 5px;
+                padding: 1px 2px;
+              }
+            }
+            
+            /* Configurações para tablets */
+            @media screen and (min-width: 769px) and (max-width: 1024px) {
+              body {
+                font-size: 9px;
+              }
+              
+              .header h1 {
+                font-size: 16px;
+              }
+              
+              table {
+                font-size: 7px;
+              }
+              
+              th, td {
+                padding: 3px;
+                font-size: 7px;
               }
             }
           </style>
@@ -401,8 +479,8 @@ const Lancamentos = () => {
                     <th style="width: 12%;">Data</th>
                     <th style="width: 18%;">Banco</th>
                     <th style="width: 10%;">Tipo</th>
-                    <th style="width: 35%;">Descrição</th>
-                    <th style="width: 15%;">Nº Nota</th>
+                    <th style="width: 40%;">Descrição</th>
+                    <th style="width: 10%;">Nº Nota</th>
                     <th style="width: 10%;">Valor</th>
                   </tr>
                 </thead>
@@ -413,10 +491,10 @@ const Lancamentos = () => {
                       <td>${lancamento.bancos?.nome || 'N/A'}</td>
                       <td>
                         <span class="tipo-badge ${lancamento.tipo === 'credito' ? 'tipo-credito' : 'tipo-debito'}">
-                          ${lancamento.tipo === 'credito' ? 'Crédito' : 'Débito'}
+                          ${lancamento.tipo === 'credito' ? 'Créd.' : 'Déb.'}
                         </span>
                       </td>
-                      <td style="word-break: break-word;">${lancamento.descricao}</td>
+                      <td style="word-break: break-word; overflow-wrap: break-word;">${lancamento.descricao}</td>
                       <td>${lancamento.numero_nota_fiscal || '-'}</td>
                       <td class="text-right ${lancamento.tipo === 'credito' ? 'valor-credito' : 'valor-debito'}">
                         ${lancamento.tipo === 'credito' ? '+' : '-'} R$ ${lancamento.valor.toFixed(2)}
