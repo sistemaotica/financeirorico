@@ -37,7 +37,7 @@ const Login = ({ onLogin }: LoginProps) => {
     if (email === VALID_CREDENTIALS.email && password === VALID_CREDENTIALS.password) {
       toast({
         title: "Login realizado com sucesso!",
-        description: "Bem-vindo ao FinWise",
+        description: "Bem-vindo ao RICCO",
       });
       onLogin(email, password);
     } else {
@@ -142,7 +142,7 @@ const Login = ({ onLogin }: LoginProps) => {
         </Card>
 
         <div className="text-center mt-6 text-sm text-gray-500">
-          © 2024 FinWise. Todos os direitos reservados.
+          © 2025 FINANCEIRO - RICCO. Todos os direitos reservados a @RICARDOCACTUS.
         </div>
       </div>
     </div>
