@@ -63,11 +63,33 @@ const Dashboard = () => {
       }
     };
 
+    // EVENT LISTENER ESPECÍFICO para desfazer baixa de fornecedor
+    const handleDesfazerBaixaFornecedor = (data: { bancoId: string; novoSaldo: number; valor: number }) => {
+      console.log('Dashboard: DESFAZER BAIXA FORNECEDOR - Atualização INSTANTÂNEA recebida:', data);
+      
+      // ATUALIZAÇÃO PRIORITÁRIA do saldo no array de bancos
+      setBancos(prevBancos => {
+        const bancosAtualizados = prevBancos.map(banco => 
+          banco.id === data.bancoId 
+            ? { ...banco, saldo: data.novoSaldo } 
+            : banco
+        );
+        console.log('Dashboard: DESFAZER BAIXA - Array de bancos atualizado INSTANTANEAMENTE:', bancosAtualizados);
+        return bancosAtualizados;
+      });
+      
+      // Se é o banco selecionado, atualizar saldo INSTANTANEAMENTE
+      if (data.bancoId === bancoSelecionado) {
+        console.log('Dashboard: DESFAZER BAIXA - SALDO ATUALIZADO INSTANTANEAMENTE para:', data.novoSaldo);
+        setSaldoBanco(data.novoSaldo);
+      }
+    };
+
     // EVENTOS PRIORITÁRIOS para sincronização INSTANTÂNEA
     eventBus.on('bancoSaldoAtualizado', handleBancoUpdate);
     eventBus.on('lancamentoRealizado', handleBancoUpdate); // Evento de lançamentos
     eventBus.on('baixaContaRealizada', handleBancoUpdate); // Evento de baixas
-    eventBus.on('desfazerBaixaRealizada', handleBancoUpdate); // Evento de desfazer baixas
+    eventBus.on('desfazerBaixaRealizada', handleDesfazerBaixaFornecedor); // Evento específico de desfazer baixas
     
     console.log('Dashboard: Event listeners PRIORITÁRIOS registrados para sincronização INSTANTÂNEA');
 
@@ -75,7 +97,7 @@ const Dashboard = () => {
       eventBus.off('bancoSaldoAtualizado', handleBancoUpdate);
       eventBus.off('lancamentoRealizado', handleBancoUpdate);
       eventBus.off('baixaContaRealizada', handleBancoUpdate);
-      eventBus.off('desfazerBaixaRealizada', handleBancoUpdate);
+      eventBus.off('desfazerBaixaRealizada', handleDesfazerBaixaFornecedor);
       console.log('Dashboard: Event listeners removidos');
     };
   }, [bancoSelecionado]);
@@ -226,27 +248,35 @@ const Dashboard = () => {
       {/* Cards principais */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Saldo da Conta - MODELO APRIMORADO COM SINCRONIZAÇÃO INSTANTÂNEA */}
-        <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 hover:shadow-lg transition-shadow relative">
+        <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 hover:shadow-lg transition-shadow relative overflow-hidden">
+          <div className="absolute top-2 right-2">
+            <div className="flex items-center space-x-1">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" title="Sincronização em tempo real ativa"></div>
+              <span className="text-xs text-green-600 font-medium">SYNC</span>
+            </div>
+          </div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-blue-700">
               Saldo da Conta
-              {/* Indicador visual de sincronização */}
-              <div className="inline-block ml-2 w-2 h-2 bg-green-500 rounded-full animate-pulse" title="Sincronização em tempo real ativa"></div>
             </CardTitle>
             <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
               <Wallet className="w-4 h-4 text-blue-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-900 transition-all duration-300">
+            <div className="text-3xl font-bold text-blue-900 transition-all duration-300 mb-2">
               {formatCurrency(saldoBanco)}
             </div>
-            <p className="text-xs text-blue-600 mt-1">
-              {bancoAtual ? `${bancoAtual.nome} - ${bancoAtual.agencia}/${bancoAtual.conta}` : 'Selecione um banco'}
+            <p className="text-xs text-blue-600 mt-1 font-medium">
+              {bancoAtual ? `${bancoAtual.nome}` : 'Selecione um banco'}
             </p>
-            <p className="text-xs text-blue-500 mt-1 opacity-75">
-              Atualização instantânea ativa
+            <p className="text-xs text-blue-500 opacity-75">
+              {bancoAtual ? `Ag: ${bancoAtual.agencia} | Conta: ${bancoAtual.conta}` : ''}
             </p>
+            <div className="mt-2 flex items-center space-x-1">
+              <div className="w-1 h-1 bg-green-400 rounded-full"></div>
+              <span className="text-xs text-green-600 font-medium">Atualização Instantânea</span>
+            </div>
           </CardContent>
         </Card>
 

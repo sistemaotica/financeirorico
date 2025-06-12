@@ -474,14 +474,18 @@ const ContasPagarReceber = () => {
         b.id === baixa.banco_id ? { ...b, saldo: novoSaldo } : b
       ));
 
-      // 2. SEGUNDO: Emitir evento IMEDIATAMENTE para o Dashboard
-      console.log('ContasPagarReceber: Emitindo evento bancoSaldoAtualizado IMEDIATAMENTE para Dashboard', { 
+      // 2. SEGUNDO: Emitir evento ESPECÍFICO para desfazer baixa IMEDIATAMENTE para o Dashboard
+      console.log('ContasPagarReceber: Emitindo evento DESFAZER BAIXA IMEDIATAMENTE para Dashboard', { 
         bancoId: baixa.banco_id, 
-        novoSaldo: novoSaldo 
+        novoSaldo: novoSaldo,
+        valor: baixa.valor,
+        tipo: conta.destino_tipo
       });
-      eventBus.emit('bancoSaldoAtualizado', { 
+      eventBus.emit('desfazerBaixaRealizada', { 
         bancoId: baixa.banco_id, 
-        novoSaldo: novoSaldo 
+        novoSaldo: novoSaldo,
+        valor: baixa.valor,
+        tipo: conta.destino_tipo
       });
 
       // 3. TERCEIRO: Atualizar saldo do banco no banco de dados
@@ -504,9 +508,11 @@ const ContasPagarReceber = () => {
         ));
         
         // Reverter evento
-        eventBus.emit('bancoSaldoAtualizado', { 
+        eventBus.emit('desfazerBaixaRealizada', { 
           bancoId: baixa.banco_id, 
-          novoSaldo: banco.saldo 
+          novoSaldo: banco.saldo,
+          valor: baixa.valor,
+          tipo: conta.destino_tipo
         });
         return;
       }
