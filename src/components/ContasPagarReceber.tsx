@@ -363,7 +363,7 @@ const ContasPagarReceber = () => {
       return;
     }
 
-    // Insert the baixa record
+    // APENAS inserir a baixa - o trigger do banco se encarrega de atualizar saldo e conta
     const { error: baixaError } = await supabase
       .from('baixas_contas')
       .insert(baixaData);
@@ -377,147 +377,23 @@ const ContasPagarReceber = () => {
       return;
     }
 
-    // Update bank balance based on account type
-    const banco = bancos.find(b => b.id === baixaData.banco_id);
-    if (banco) {
-      let novoSaldo: number;
-      
-      // Se a conta é de fornecedor (pagar), diminui do saldo
-      // Se a conta é de cliente (receber), soma ao saldo
-      if (conta.destino_tipo === 'fornecedor') {
-        novoSaldo = banco.saldo - baixaData.valor;
-      } else {
-        novoSaldo = banco.saldo + baixaData.valor;
-      }
-      
-      const { error: bancoError } = await supabase
-        .from('bancos')
-        .update({ saldo: novoSaldo })
-        .eq('id', baixaData.banco_id);
-
-      if (bancoError) {
-        toast({
-          title: "Erro",
-          description: "Erro ao atualizar saldo do banco",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Update local bancos state
-      setBancos(prev => prev.map(b => 
-        b.id === baixaData.banco_id ? { ...b, saldo: novoSaldo } : b
-      ));
-
-      // Emitir evento para atualizar o Dashboard
-      console.log('ContasPagarReceber: Emitindo evento bancoSaldoAtualizado', { 
-        bancoId: baixaData.banco_id, 
-        novoSaldo: novoSaldo 
-      });
-      eventBus.emit('bancoSaldoAtualizado', { 
-        bancoId: baixaData.banco_id, 
-        novoSaldo: novoSaldo 
-      });
-    }
-
     toast({
       title: "Sucesso",
       description: "Baixa realizada com sucesso"
     });
     setBaixaDialogOpen(false);
-    carregarContas();
-    carregarBaixasContas();
+    
+    // Recarregar dados para sincronizar com as mudanças do trigger
+    await carregarContas();
+    await carregarBaixasContas();
+    await carregarBancos();
   };
 
   const handleDesfazerBaixaIndividual = async (baixa: BaixaConta) => {
     if (confirm(`Tem certeza que deseja desfazer esta baixa de R$ ${baixa.valor.toFixed(2)}?`)) {
-      const conta = contas.find(c => c.id === baixa.conta_id);
-      const banco = bancos.find(b => b.id === baixa.banco_id);
+      console.log(`DESFAZENDO BAIXA: ID ${baixa.id}, Valor: R$ ${baixa.valor}`);
       
-      if (!conta || !banco) {
-        toast({
-          title: "Erro",
-          description: "Conta ou banco não encontrado",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Calcular o novo saldo - LÓGICA DE REVERSÃO CORRIGIDA
-      let novoSaldo: number;
-      
-      // LÓGICA CORRETA DE REVERSÃO PARA DESFAZER BAIXA:
-      // Para FORNECEDORES (contas a pagar): ao desfazer baixa, SOMA de volta ao banco (reverte o pagamento)
-      // Para CLIENTES (contas a receber): ao desfazer baixa, SUBTRAI do banco (reverte o recebimento)
-      if (conta.destino_tipo === 'fornecedor') {
-        // Conta de fornecedor: ao desfazer, SOMA o valor de volta (reverter o pagamento)
-        novoSaldo = banco.saldo + baixa.valor;
-        console.log(`DESFAZER BAIXA FORNECEDOR: Saldo atual ${banco.saldo} + baixa ${baixa.valor} = novo saldo ${novoSaldo}`);
-      } else {
-        // Conta de cliente: ao desfazer, SUBTRAI o valor (reverter o recebimento)
-        novoSaldo = banco.saldo - baixa.valor;
-        
-        // Verificar se o banco tem saldo suficiente
-        if (novoSaldo < 0) {
-          toast({
-            title: "Erro",
-            description: "Saldo insuficiente no banco para realizar o estorno",
-            variant: "destructive"
-          });
-          return;
-        }
-        console.log(`DESFAZER BAIXA CLIENTE: Saldo atual ${banco.saldo} - baixa ${baixa.valor} = novo saldo ${novoSaldo}`);
-      }
-
-      // 1. PRIMEIRO: Atualizar estado local IMEDIATAMENTE para reflexo instantâneo no Dashboard
-      setBancos(prev => prev.map(b => 
-        b.id === baixa.banco_id ? { ...b, saldo: novoSaldo } : b
-      ));
-
-      // 2. SEGUNDO: Emitir evento ESPECÍFICO para desfazer baixa IMEDIATAMENTE para o Dashboard
-      console.log('ContasPagarReceber: Emitindo evento DESFAZER BAIXA IMEDIATAMENTE para Dashboard', { 
-        bancoId: baixa.banco_id, 
-        novoSaldo: novoSaldo,
-        valor: baixa.valor,
-        tipo: conta.destino_tipo
-      });
-      eventBus.emit('desfazerBaixaRealizada', { 
-        bancoId: baixa.banco_id, 
-        novoSaldo: novoSaldo,
-        valor: baixa.valor,
-        tipo: conta.destino_tipo
-      });
-
-      // 3. TERCEIRO: Atualizar saldo do banco no banco de dados
-      const { error: bancoError } = await supabase
-        .from('bancos')
-        .update({ saldo: novoSaldo })
-        .eq('id', baixa.banco_id);
-
-      if (bancoError) {
-        console.error('Erro ao atualizar banco:', bancoError);
-        toast({
-          title: "Erro",
-          description: "Erro ao atualizar saldo do banco",
-          variant: "destructive"
-        });
-        
-        // Reverter estado local em caso de erro
-        setBancos(prev => prev.map(b => 
-          b.id === baixa.banco_id ? { ...b, saldo: banco.saldo } : b
-        ));
-        
-        // Reverter evento
-        eventBus.emit('desfazerBaixaRealizada', { 
-          bancoId: baixa.banco_id, 
-          novoSaldo: banco.saldo,
-          valor: baixa.valor,
-          tipo: conta.destino_tipo
-        });
-        return;
-      }
-
-      // 4. QUARTO: Remover a baixa específica
+      // APENAS deletar a baixa - o trigger do banco se encarrega do resto
       const { error: deleteBaixaError } = await supabase
         .from('baixas_contas')
         .delete()
@@ -533,37 +409,15 @@ const ContasPagarReceber = () => {
         return;
       }
 
-      // 5. QUINTO: Recalcular o valor_baixa da conta
-      const baixasRestantes = baixasContas.filter(b => b.conta_id === baixa.conta_id && b.id !== baixa.id);
-      const novoValorBaixa = baixasRestantes.reduce((total, b) => total + b.valor, 0);
-
-      // 6. SEXTO: Atualizar a conta com o novo valor_baixa e status
-      const { error: updateContaError } = await supabase
-        .from('contas')
-        .update({
-          valor_baixa: novoValorBaixa,
-          status: novoValorBaixa >= conta.valor ? 'pago' : 'aberto'
-        })
-        .eq('id', conta.id);
-
-      if (updateContaError) {
-        console.error('Erro ao atualizar conta:', updateContaError);
-        toast({
-          title: "Erro",
-          description: "Erro ao atualizar conta",
-          variant: "destructive"
-        });
-        return;
-      }
-
       toast({
         title: "Sucesso",
-        description: `Baixa de R$ ${baixa.valor.toFixed(2)} foi desfeita. Saldo do ${banco.nome} atualizado IMEDIATAMENTE para R$ ${novoSaldo.toFixed(2)}.`
+        description: `Baixa de R$ ${baixa.valor.toFixed(2)} foi desfeita com sucesso.`
       });
       
-      // Recarregar dados para garantir sincronização
+      // Recarregar dados para sincronizar com as mudanças do trigger
       await carregarContas();
-      await carregarBaixasContas();
+      await carregarBaixasContas(); 
+      await carregarBancos();
     }
   };
 
