@@ -18,12 +18,28 @@ const Index = () => {
 
   const handleLogin = (email: string, password: string) => {
     console.log('Login attempt:', { email, password });
-    setIsAuthenticated(true);
+    
+    // Credenciais válidas
+    const VALID_CREDENTIALS = {
+      email: 'admin@finwise.com',
+      password: 'admin123'
+    };
+
+    // Verificar se as credenciais são válidas
+    if (email === VALID_CREDENTIALS.email && password === VALID_CREDENTIALS.password) {
+      setIsAuthenticated(true);
+      console.log('Login successful');
+    } else {
+      console.log('Login failed - invalid credentials');
+      // A validação já é feita no componente Login, aqui só confirmamos
+      setIsAuthenticated(false);
+    }
   };
 
   const handleLogout = () => {
     setIsAuthenticated(false);
     setCurrentPage('dashboard');
+    console.log('User logged out');
   };
 
   const handleNavigate = (page: string) => {
@@ -60,10 +76,12 @@ const Index = () => {
     }
   };
 
+  // Se não estiver autenticado, mostrar apenas a tela de login
   if (!isAuthenticated) {
     return <Login onLogin={handleLogin} />;
   }
 
+  // Se estiver autenticado, mostrar o sistema
   return (
     <Layout 
       currentPage={currentPage}

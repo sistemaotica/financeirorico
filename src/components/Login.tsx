@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Eye, EyeOff, DollarSign } from 'lucide-react';
+import { Eye, EyeOff, DollarSign, AlertCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface LoginProps {
   onLogin: (email: string, password: string) => void;
@@ -15,15 +16,39 @@ const Login = ({ onLogin }: LoginProps) => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const { toast } = useToast();
+
+  // Credenciais válidas (em um sistema real, isso viria do backend)
+  const VALID_CREDENTIALS = {
+    email: 'admin@finwise.com',
+    password: 'admin123'
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
     
     // Simular delay de autenticação
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    onLogin(email, password);
+    // Validar credenciais
+    if (email === VALID_CREDENTIALS.email && password === VALID_CREDENTIALS.password) {
+      toast({
+        title: "Login realizado com sucesso!",
+        description: "Bem-vindo ao FinWise",
+      });
+      onLogin(email, password);
+    } else {
+      setError('Email ou senha incorretos. Tente novamente.');
+      toast({
+        title: "Erro de autenticação",
+        description: "Email ou senha incorretos",
+        variant: "destructive"
+      });
+    }
+    
     setIsLoading(false);
   };
 
@@ -49,6 +74,13 @@ const Login = ({ onLogin }: LoginProps) => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-md text-red-700">
+                  <AlertCircle className="w-4 h-4" />
+                  <span className="text-sm">{error}</span>
+                </div>
+              )}
+              
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium text-gray-700">
                   Email
@@ -60,7 +92,9 @@ const Login = ({ onLogin }: LoginProps) => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                  className={`h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500 ${
+                    error ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                  }`}
                 />
               </div>
               
@@ -76,7 +110,9 @@ const Login = ({ onLogin }: LoginProps) => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="h-11 pr-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                    className={`h-11 pr-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500 ${
+                      error ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                    }`}
                   />
                   <button
                     type="button"
@@ -86,6 +122,12 @@ const Login = ({ onLogin }: LoginProps) => {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+              </div>
+
+              <div className="text-xs text-gray-500 bg-blue-50 p-3 rounded-md">
+                <strong>Credenciais de teste:</strong><br />
+                Email: admin@finwise.com<br />
+                Senha: admin123
               </div>
 
               <Button
