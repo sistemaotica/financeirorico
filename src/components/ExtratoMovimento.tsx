@@ -9,7 +9,7 @@ import { FileText, Download } from 'lucide-react';
 import { useExtratoData, MovimentacaoExtrato } from '@/hooks/useExtratoData';
 
 const ExtratoMovimento = () => {
-  const { bancos, movimentacoes, carregarMovimentacoes } = useExtratoData();
+  const { bancos, movimentacoes, conciliacao, carregarMovimentacoes } = useExtratoData();
   const [bancoId, setBancoId] = useState('');
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
@@ -135,6 +135,59 @@ const ExtratoMovimento = () => {
               margin-top: 5px;
               font-weight: 600;
             }
+
+            .conciliacao-section {
+              background: linear-gradient(135deg, #f0fff4 0%, #f0f8ff 100%);
+              border: 2px solid #9ae6b4;
+              border-radius: 16px;
+              padding: 25px;
+              margin-bottom: 30px;
+              box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            }
+
+            .conciliacao-title {
+              color: #276749;
+              font-size: 22px;
+              font-weight: 700;
+              margin-bottom: 20px;
+              text-align: center;
+            }
+
+            .conciliacao-grid {
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+              gap: 15px;
+            }
+
+            .conciliacao-item {
+              background: white;
+              padding: 15px;
+              border-radius: 12px;
+              text-align: center;
+              border-left: 5px solid #48bb78;
+              box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            }
+
+            .conciliacao-label {
+              font-weight: 600;
+              color: #2d3748;
+              font-size: 14px;
+              margin-bottom: 5px;
+            }
+
+            .conciliacao-value {
+              font-size: 18px;
+              font-weight: 800;
+              color: #276749;
+            }
+
+            .valor-positivo {
+              color: #38a169;
+            }
+
+            .valor-negativo {
+              color: #e53e3e;
+            }
             
             .table-container {
               background: white;
@@ -210,47 +263,6 @@ const ExtratoMovimento = () => {
               font-weight: 700;
             }
             
-            .summary-section {
-              background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
-              color: white;
-              padding: 30px;
-              border-radius: 16px;
-              margin-top: 30px;
-            }
-            
-            .summary-title {
-              font-size: 24px;
-              font-weight: 800;
-              margin-bottom: 20px;
-              text-align: center;
-            }
-            
-            .summary-grid {
-              display: grid;
-              grid-template-columns: repeat(3, 1fr);
-              gap: 25px;
-            }
-            
-            .summary-card {
-              background: rgba(255, 255, 255, 0.1);
-              padding: 20px;
-              border-radius: 12px;
-              text-align: center;
-              backdrop-filter: blur(10px);
-            }
-            
-            .summary-card h4 {
-              font-size: 16px;
-              font-weight: 600;
-              margin-bottom: 10px;
-              opacity: 0.9;
-            }
-            
-            .summary-card .value {
-              font-size: 28px;
-              font-weight: 800;
-            }
-            
             @media print {
               body {
                 background: white !important;
@@ -267,7 +279,7 @@ const ExtratoMovimento = () => {
           <div class="container">
             <div class="header">
               <h1>📊 Extrato do Movimento</h1>
-              <div class="subtitle">Extrato Bancário Detalhado</div>
+              <div class="subtitle">Conciliação Bancária Detalhada</div>
               <div class="subtitle">Gerado em ${new Date().toLocaleDateString('pt-BR', { 
                 weekday: 'long', 
                 year: 'numeric', 
@@ -300,6 +312,44 @@ const ExtratoMovimento = () => {
               </div>
             </div>
 
+            ${conciliacao ? `
+            <div class="conciliacao-section">
+              <div class="conciliacao-title">💰 Conciliação Bancária</div>
+              <div class="conciliacao-grid">
+                <div class="conciliacao-item">
+                  <div class="conciliacao-label">Saldo Inicial</div>
+                  <div class="conciliacao-value ${conciliacao.saldoInicial >= 0 ? 'valor-positivo' : 'valor-negativo'}">
+                    R$ ${conciliacao.saldoInicial.toFixed(2).replace('.', ',')}
+                  </div>
+                </div>
+                <div class="conciliacao-item">
+                  <div class="conciliacao-label">Total Entradas</div>
+                  <div class="conciliacao-value valor-positivo">
+                    + R$ ${conciliacao.totalEntradas.toFixed(2).replace('.', ',')}
+                  </div>
+                </div>
+                <div class="conciliacao-item">
+                  <div class="conciliacao-label">Total Saídas</div>
+                  <div class="conciliacao-value valor-negativo">
+                    - R$ ${conciliacao.totalSaidas.toFixed(2).replace('.', ',')}
+                  </div>
+                </div>
+                <div class="conciliacao-item">
+                  <div class="conciliacao-label">Saldo Final</div>
+                  <div class="conciliacao-value ${conciliacao.saldoFinal >= 0 ? 'valor-positivo' : 'valor-negativo'}">
+                    R$ ${conciliacao.saldoFinal.toFixed(2).replace('.', ',')}
+                  </div>
+                </div>
+                <div class="conciliacao-item">
+                  <div class="conciliacao-label">Movimentações</div>
+                  <div class="conciliacao-value">
+                    ${conciliacao.quantidadeMovimentacoes} registros
+                  </div>
+                </div>
+              </div>
+            </div>
+            ` : ''}
+
             <div class="table-container">
               <table>
                 <thead>
@@ -330,30 +380,6 @@ const ExtratoMovimento = () => {
                   }).join('')}
                 </tbody>
               </table>
-            </div>
-            
-            <div class="summary-section">
-              <div class="summary-title">💼 Resumo do Período</div>
-              <div class="summary-grid">
-                <div class="summary-card">
-                  <h4>Total de Movimentações</h4>
-                  <div class="value">${movimentacoes.length}</div>
-                </div>
-                <div class="summary-card">
-                  <h4>Total Créditos</h4>
-                  <div class="value">R$ ${movimentacoes
-                    .filter(m => m.tipo === 'credito' || m.tipo === 'baixa_receber')
-                    .reduce((sum, m) => sum + m.valor, 0)
-                    .toFixed(2).replace('.', ',')}</div>
-                </div>
-                <div class="summary-card">
-                  <h4>Total Débitos</h4>
-                  <div class="value">R$ ${movimentacoes
-                    .filter(m => m.tipo === 'debito' || m.tipo === 'baixa_pagar')
-                    .reduce((sum, m) => sum + m.valor, 0)
-                    .toFixed(2).replace('.', ',')}</div>
-                </div>
-              </div>
             </div>
           </div>
         </body>
@@ -422,6 +448,48 @@ const ExtratoMovimento = () => {
               />
             </div>
           </div>
+
+          {conciliacao && (
+            <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-green-200">
+              <CardHeader>
+                <CardTitle className="text-green-800">Conciliação Bancária</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                  <div className="text-center">
+                    <div className="text-gray-600">Saldo Inicial</div>
+                    <div className={`font-bold ${conciliacao.saldoInicial >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      R$ {conciliacao.saldoInicial.toFixed(2)}
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-gray-600">Total Entradas</div>
+                    <div className="font-bold text-green-600">
+                      + R$ {conciliacao.totalEntradas.toFixed(2)}
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-gray-600">Total Saídas</div>
+                    <div className="font-bold text-red-600">
+                      - R$ {conciliacao.totalSaidas.toFixed(2)}
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-gray-600">Saldo Final</div>
+                    <div className={`font-bold ${conciliacao.saldoFinal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      R$ {conciliacao.saldoFinal.toFixed(2)}
+                    </div>
+                  </div>
+                  <div className="text-center md:col-span-2">
+                    <div className="text-gray-600">Movimentações</div>
+                    <div className="font-bold text-blue-600">
+                      {conciliacao.quantidadeMovimentacoes} registros
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <div className="flex justify-center">
             <Button 

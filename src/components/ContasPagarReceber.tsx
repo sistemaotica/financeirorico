@@ -26,6 +26,8 @@ const ContasPagarReceber = () => {
 
   const [filtroStatus, setFiltroStatus] = useState<string>('todos');
   const [filtroBanco, setFiltroBanco] = useState<string>('todos');
+  const [filtroCliente, setFiltroCliente] = useState<string>('todos');
+  const [filtroFornecedor, setFiltroFornecedor] = useState<string>('todos');
   const [baixaDialogOpen, setBaixaDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedConta, setSelectedConta] = useState<Conta | null>(null);
@@ -180,8 +182,18 @@ const ContasPagarReceber = () => {
     if (filtroBanco !== 'todos') {
       bancoMatch = conta.banco_baixa_id === filtroBanco;
     }
+
+    let clienteMatch = true;
+    if (filtroCliente !== 'todos') {
+      clienteMatch = conta.destino_tipo === 'cliente' && conta.cliente_id === filtroCliente;
+    }
+
+    let fornecedorMatch = true;
+    if (filtroFornecedor !== 'todos') {
+      fornecedorMatch = conta.destino_tipo === 'fornecedor' && conta.fornecedor_id === filtroFornecedor;
+    }
     
-    return statusMatch && bancoMatch;
+    return statusMatch && bancoMatch && clienteMatch && fornecedorMatch;
   });
 
   const contasClientes = contasFiltradas.filter(conta => conta.destino_tipo === 'cliente');
@@ -200,7 +212,7 @@ const ContasPagarReceber = () => {
         <CardHeader>
           <CardTitle className="flex justify-between items-center">
             Contas Cadastradas
-            <div className="flex space-x-2">
+            <div className="flex space-x-2 flex-wrap">
               <Select value={filtroStatus} onValueChange={setFiltroStatus}>
                 <SelectTrigger className="w-40">
                   <SelectValue />
@@ -221,6 +233,32 @@ const ContasPagarReceber = () => {
                   {bancos.map((banco) => (
                     <SelectItem key={banco.id} value={banco.id}>
                       {banco.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={filtroCliente} onValueChange={setFiltroCliente}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Filtrar por cliente" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os clientes</SelectItem>
+                  {clientes.map((cliente) => (
+                    <SelectItem key={cliente.id} value={cliente.id}>
+                      {cliente.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={filtroFornecedor} onValueChange={setFiltroFornecedor}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Filtrar por fornecedor" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os fornecedores</SelectItem>
+                  {fornecedores.map((fornecedor) => (
+                    <SelectItem key={fornecedor.id} value={fornecedor.id}>
+                      {fornecedor.nome}
                     </SelectItem>
                   ))}
                 </SelectContent>

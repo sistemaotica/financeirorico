@@ -15,9 +15,18 @@ export interface MovimentacaoExtrato {
   saldo_acumulado: number;
 }
 
+export interface ConciliacaoBancaria {
+  totalEntradas: number;
+  totalSaidas: number;
+  saldoInicial: number;
+  saldoFinal: number;
+  quantidadeMovimentacoes: number;
+}
+
 export const useExtratoData = () => {
   const [bancos, setBancos] = useState<Banco[]>([]);
   const [movimentacoes, setMovimentacoes] = useState<MovimentacaoExtrato[]>([]);
+  const [conciliacao, setConciliacao] = useState<ConciliacaoBancaria | null>(null);
   const { toast } = useToast();
 
   const carregarBancos = async () => {
@@ -34,6 +43,9 @@ export const useExtratoData = () => {
 
   const carregarMovimentacoes = async (bancoId: string, dataInicio: string, dataFim: string) => {
     try {
+      // Buscar saldo inicial do banco antes do período
+      const bancoSelecionado = bancos.find(b => b.id === bancoId);
+      
       // Buscar lançamentos
       const { data: lancamentos, error: errorLancamentos } = await supabase
         .from('lancamentos')
@@ -119,8 +131,22 @@ export const useExtratoData = () => {
       // Ordenar por data
       movimentacoesCombinadas.sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
 
-      // Calcular saldo acumulado
-      let saldoAcumulado = 0;
+      // Calcular conciliação bancária
+      const totalEntradas = movimentacoesCombinadas
+        .filter(mov => mov.tipo === 'credito' || mov.tipo === 'baixa_receber')
+        .reduce((sum, mov) => sum + mov.valor, 0);
+
+      const totalSaidas = movimentacoesCombinadas
+        .filter(mov => mov.tipo === 'debito' || mov.tipo === 'baixa_pagar')
+        .reduce((sum, mov) => sum + mov.valor, 0);
+
+      // Calcular saldo inicial (saldo atual do banco menos as movimentações do período)
+      const saldoAtual = bancoSelecionado?.saldo || 0;
+      const saldoVariacao = totalEntradas - totalSaidas;
+      const saldoInicial = saldoAtual - saldoVariacao;
+
+      // Calcular saldo acumulado para cada movimentação
+      let saldoAcumulado = saldoInicial;
       movimentacoesCombinadas.forEach(mov => {
         if (mov.tipo === 'credito' || mov.tipo === 'baixa_receber') {
           saldoAcumulado += mov.valor;
@@ -130,7 +156,16 @@ export const useExtratoData = () => {
         mov.saldo_acumulado = saldoAcumulado;
       });
 
+      const conciliacaoData: ConciliacaoBancaria = {
+        totalEntradas,
+        totalSaidas,
+        saldoInicial,
+        saldoFinal: saldoAcumulado,
+        quantidadeMovimentacoes: movimentacoesCombinadas.length
+      };
+
       setMovimentacoes(movimentacoesCombinadas);
+      setConciliacao(conciliacaoData);
     } catch (error) {
       toast({
         title: "Erro",
@@ -147,6 +182,7 @@ export const useExtratoData = () => {
   return {
     bancos,
     movimentacoes,
+    conciliacao,
     carregarMovimentacoes
   };
 };
