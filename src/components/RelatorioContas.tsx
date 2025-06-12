@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { FileText, Download } from 'lucide-react';
 import { useContasData } from '@/hooks/useContasData';
+import { Conta } from '@/types/contas';
 
 const RelatorioContas = () => {
   const { clientes, fornecedores, contas } = useContasData();
@@ -66,7 +67,7 @@ const RelatorioContas = () => {
     gerarPDF(contasFiltradas);
   };
 
-  const gerarPDF = (contasFiltradas: typeof contas) => {
+  const gerarPDF = (contasFiltradas: Conta[]) => {
     // Criar HTML para o relatório
     const htmlContent = `
       <!DOCTYPE html>
@@ -118,7 +119,7 @@ const RelatorioContas = () => {
               ${contasFiltradas.map(conta => `
                 <tr>
                   <td>${new Date(conta.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
-                  <td>${conta.destino_tipo === 'cliente' ? conta.clientes?.nome : conta.fornecedores?.nome}</td>
+                  <td>${conta.destino_tipo === 'cliente' ? conta.clientes?.nome || 'N/A' : conta.fornecedores?.nome || 'N/A'}</td>
                   <td>${conta.referencia}</td>
                   <td>${conta.parcela_numero}/${conta.parcela_total}</td>
                   <td>${conta.numero_nota || '-'}</td>
