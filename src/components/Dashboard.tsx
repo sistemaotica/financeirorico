@@ -4,14 +4,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { 
   Wallet, 
-  TrendingUp, 
-  TrendingDown, 
   DollarSign,
-  Activity
+  Activity,
+  CheckSquare,
+  Plus,
+  Trash2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import TasksPanel from '@/components/tasks/TasksPanel';
 
 interface Banco {
   id: string;
@@ -22,22 +25,28 @@ interface Banco {
   tipo_banco: string;
 }
 
+interface Task {
+  id: string;
+  title: string;
+  completed: boolean;
+  created_at: string;
+}
+
 const Dashboard = () => {
   const [bancos, setBancos] = useState<Banco[]>([]);
   const [bancoSelecionado, setBancoSelecionado] = useState<string>('');
   const [saldoBanco, setSaldoBanco] = useState<number>(0);
-  const [totalContasPagar, setTotalContasPagar] = useState<number>(0);
-  const [totalContasReceber, setTotalContasReceber] = useState<number>(0);
   const [isRealtimeConnected, setIsRealtimeConnected] = useState<boolean>(false);
+  const [showTasksPanel, setShowTasksPanel] = useState<boolean>(false);
+  const [tasks, setTasks] = useState<Task[]>([]);
   
-  // Usar ref para controlar se já há uma subscription ativa
   const channelRef = useRef<any>(null);
 
   useEffect(() => {
     carregarDados();
+    carregarTasks();
     setupRealtimeSubscription();
     
-    // Cleanup function para remover subscription
     return () => {
       if (channelRef.current) {
         console.log('Dashboard: Removendo subscription existente');
@@ -47,9 +56,7 @@ const Dashboard = () => {
     };
   }, []);
 
-  // Realtime subscription para sincronização instantânea
   const setupRealtimeSubscription = () => {
-    // Se já existe um canal, remove primeiro
     if (channelRef.current) {
       console.log('Dashboard: Removendo canal existente antes de criar novo');
       supabase.removeChannel(channelRef.current);
@@ -72,51 +79,11 @@ const Dashboard = () => {
           handleBancoRealtimeUpdate(payload);
         }
       )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'baixas_contas'
-        },
-        (payload) => {
-          console.log('Dashboard Realtime: Mudança em baixas_contas detectada:', payload);
-          // Recarregar dados quando há mudanças em baixas
-          carregarDados();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'lancamentos'
-        },
-        (payload) => {
-          console.log('Dashboard Realtime: Mudança em lançamentos detectada:', payload);
-          // Recarregar dados quando há mudanças em lançamentos
-          carregarDados();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'contas'
-        },
-        (payload) => {
-          console.log('Dashboard Realtime: Mudança em contas detectada:', payload);
-          // Recarregar dados quando há mudanças em contas
-          carregarDados();
-        }
-      )
       .subscribe((status) => {
         console.log('Dashboard Realtime status:', status);
         setIsRealtimeConnected(status === 'SUBSCRIBED');
       });
 
-    // Armazenar referência do canal
     channelRef.current = channel;
   };
 
@@ -126,7 +93,6 @@ const Dashboard = () => {
     if (payload.eventType === 'UPDATE' && payload.new) {
       const bancoAtualizado = payload.new;
       
-      // Atualizar array de bancos IMEDIATAMENTE
       setBancos(prevBancos => {
         const bancosAtualizados = prevBancos.map(banco => 
           banco.id === bancoAtualizado.id 
@@ -137,7 +103,6 @@ const Dashboard = () => {
         return bancosAtualizados;
       });
       
-      // Se é o banco selecionado, atualizar saldo IMEDIATAMENTE
       if (bancoAtualizado.id === bancoSelecionado) {
         console.log('Dashboard Realtime: SALDO ATUALIZADO INSTANTANEAMENTE para:', bancoAtualizado.saldo);
         setSaldoBanco(bancoAtualizado.saldo);
@@ -146,10 +111,7 @@ const Dashboard = () => {
   };
 
   const carregarDados = async () => {
-    await Promise.all([
-      carregarBancos(),
-      carregarTotaisContas()
-    ]);
+    await carregarBancos();
   };
 
   const carregarBancos = async () => {
@@ -164,7 +126,6 @@ const Dashboard = () => {
       console.log('Dashboard: Bancos carregados:', data);
       setBancos(data);
       
-      // Se não há banco selecionado e há bancos disponíveis, selecionar o primeiro
       if (!bancoSelecionado && data.length > 0) {
         setBancoSelecionado(data[0].id);
         setSaldoBanco(data[0].saldo);
@@ -174,41 +135,42 @@ const Dashboard = () => {
     }
   };
 
-  const carregarTotaisContas = async () => {
-    console.log('Dashboard: Carregando totais de contas...');
-    
-    // Total contas a pagar (fornecedores) - valor total menos valor baixado
-    const { data: contasPagar, error: errorPagar } = await supabase
-      .from('contas')
-      .select('valor, valor_baixa')
-      .eq('destino_tipo', 'fornecedor')
-      .lt('valor_baixa', 'valor'); // Apenas contas não totalmente pagas
-
-    if (!errorPagar && contasPagar) {
-      const totalPagar = contasPagar.reduce((sum, conta) => 
-        sum + (conta.valor - (conta.valor_baixa || 0)), 0
-      );
-      setTotalContasPagar(totalPagar);
-      console.log('Dashboard: Total contas a pagar:', totalPagar);
-    }
-
-    // Total contas a receber (clientes) - valor total menos valor baixado
-    const { data: contasReceber, error: errorReceber } = await supabase
-      .from('contas')
-      .select('valor, valor_baixa')
-      .eq('destino_tipo', 'cliente')
-      .lt('valor_baixa', 'valor'); // Apenas contas não totalmente pagas
-
-    if (!errorReceber && contasReceber) {
-      const totalReceber = contasReceber.reduce((sum, conta) => 
-        sum + (conta.valor - (conta.valor_baixa || 0)), 0
-      );
-      setTotalContasReceber(totalReceber);
-      console.log('Dashboard: Total contas a receber:', totalReceber);
+  const carregarTasks = async () => {
+    // Para simplicidade, vou usar localStorage para as tarefas
+    const savedTasks = localStorage.getItem('dashboard-tasks');
+    if (savedTasks) {
+      setTasks(JSON.parse(savedTasks));
     }
   };
 
-  // Atualizar saldo quando banco selecionado muda
+  const salvarTasks = (newTasks: Task[]) => {
+    setTasks(newTasks);
+    localStorage.setItem('dashboard-tasks', JSON.stringify(newTasks));
+  };
+
+  const adicionarTask = (title: string) => {
+    const newTask: Task = {
+      id: Date.now().toString(),
+      title,
+      completed: false,
+      created_at: new Date().toISOString()
+    };
+    const newTasks = [...tasks, newTask];
+    salvarTasks(newTasks);
+  };
+
+  const removerTask = (taskId: string) => {
+    const newTasks = tasks.filter(task => task.id !== taskId);
+    salvarTasks(newTasks);
+  };
+
+  const toggleTask = (taskId: string) => {
+    const newTasks = tasks.map(task => 
+      task.id === taskId ? { ...task, completed: !task.completed } : task
+    );
+    salvarTasks(newTasks);
+  };
+
   useEffect(() => {
     if (bancoSelecionado && bancos.length > 0) {
       const banco = bancos.find(b => b.id === bancoSelecionado);
@@ -227,6 +189,8 @@ const Dashboard = () => {
   };
 
   const bancoAtual = bancos.find(b => b.id === bancoSelecionado);
+  const tasksCompletas = tasks.filter(task => task.completed).length;
+  const totalTasks = tasks.length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
@@ -280,7 +244,7 @@ const Dashboard = () => {
         </Card>
 
         {/* Cards Principais */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Saldo da Conta - COM REALTIME */}
           <Card className="shadow-2xl border-0 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 text-white relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
@@ -328,59 +292,81 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          {/* Total Contas a Pagar */}
-          <Card className="shadow-2xl border-0 bg-gradient-to-br from-red-500 via-red-600 to-pink-700 text-white relative overflow-hidden">
+          {/* Quadro de Tarefas */}
+          <Card className="shadow-2xl border-0 bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700 text-white relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
             
             <CardHeader className="relative z-10">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-semibold text-red-100">
-                  Total a Pagar
+                <CardTitle className="text-lg font-semibold text-emerald-100">
+                  Tarefas
                 </CardTitle>
-                <TrendingDown className="w-6 h-6 text-red-200" />
+                <div className="flex items-center space-x-2">
+                  <CheckSquare className="w-6 h-6 text-emerald-200" />
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setShowTasksPanel(true)}
+                    className="text-white hover:bg-white/20"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             
             <CardContent className="relative z-10 space-y-3">
               <div className="text-3xl font-bold text-white">
-                {formatCurrency(totalContasPagar)}
+                {tasksCompletas}/{totalTasks}
               </div>
               <div className="flex items-center space-x-2">
-                <DollarSign className="w-4 h-4 text-red-200" />
-                <span className="text-red-100">
-                  Valor líquido a pagar
+                <DollarSign className="w-4 h-4 text-emerald-200" />
+                <span className="text-emerald-100">
+                  Tarefas completadas
                 </span>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Total Contas a Receber */}
-          <Card className="shadow-2xl border-0 bg-gradient-to-br from-green-500 via-green-600 to-emerald-700 text-white relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
-            
-            <CardHeader className="relative z-10">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-semibold text-green-100">
-                  Total a Receber
-                </CardTitle>
-                <TrendingUp className="w-6 h-6 text-green-200" />
-              </div>
-            </CardHeader>
-            
-            <CardContent className="relative z-10 space-y-3">
-              <div className="text-3xl font-bold text-white">
-                {formatCurrency(totalContasReceber)}
-              </div>
-              <div className="flex items-center space-x-2">
-                <DollarSign className="w-4 h-4 text-green-200" />
-                <span className="text-green-100">
-                  Valor líquido a receber
-                </span>
-              </div>
+              
+              {tasks.length > 0 && (
+                <div className="space-y-2 mt-4 max-h-32 overflow-y-auto">
+                  {tasks.slice(0, 3).map((task) => (
+                    <div key={task.id} className="flex items-center space-x-2 text-sm">
+                      <div 
+                        className={`w-3 h-3 rounded border ${
+                          task.completed ? 'bg-white' : 'border-white/50'
+                        }`}
+                      />
+                      <span className={`${task.completed ? 'line-through opacity-75' : ''} text-emerald-100`}>
+                        {task.title}
+                      </span>
+                    </div>
+                  ))}
+                  {tasks.length > 3 && (
+                    <div className="text-xs text-emerald-200">
+                      +{tasks.length - 3} mais tarefas
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {tasks.length === 0 && (
+                <div className="text-emerald-200 text-sm">
+                  Nenhuma tarefa criada
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
       </div>
+
+      {/* Painel de Tarefas */}
+      <TasksPanel
+        isOpen={showTasksPanel}
+        onClose={() => setShowTasksPanel(false)}
+        tasks={tasks}
+        onAddTask={adicionarTask}
+        onRemoveTask={removerTask}
+        onToggleTask={toggleTask}
+      />
     </div>
   );
 };

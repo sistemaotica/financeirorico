@@ -8,6 +8,8 @@ import ContasPagarReceber from '@/components/ContasPagarReceber';
 import CadastroBanco from '@/components/CadastroBanco';
 import CadastroCliente from '@/components/CadastroCliente';
 import CadastroFornecedor from '@/components/CadastroFornecedor';
+import RelatorioContas from '@/components/RelatorioContas';
+import TasksPanel from '@/components/tasks/TasksPanel';
 
 const Index = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -35,13 +37,15 @@ const Index = () => {
         return <Lancamentos />;
       case 'contas':
         return <ContasPagarReceber />;
-      case 'relatorio-contas':
+      case 'tarefas':
         return (
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-2xl font-bold mb-4">Relatório de Contas</h2>
-            <p className="text-gray-600">Relatório de contas será implementado aqui.</p>
+            <h2 className="text-2xl font-bold mb-4">Tarefas</h2>
+            <p className="text-gray-600">Use o menu de tarefas no Dashboard para gerenciar suas tarefas.</p>
           </div>
         );
+      case 'relatorio-contas':
+        return <RelatorioContas />;
       case 'extrato':
         return (
           <div className="bg-white rounded-lg shadow p-6">

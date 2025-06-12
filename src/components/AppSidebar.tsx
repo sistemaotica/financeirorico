@@ -11,9 +11,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { 
@@ -29,7 +26,8 @@ import {
   Settings,
   LogOut,
   ChevronRight,
-  DollarSign
+  DollarSign,
+  CheckSquare
 } from 'lucide-react';
 
 interface AppSidebarProps {
@@ -46,6 +44,7 @@ const AppSidebar = ({ currentPage, onNavigate, onLogout }: AppSidebarProps) => {
       items: [
         { title: "Lançamento", page: "lancamento", icon: FileText },
         { title: "Contas a Pagar/Receber", page: "contas", icon: CreditCard },
+        { title: "Tarefas", page: "tarefas", icon: CheckSquare },
       ],
     },
     {
