@@ -200,7 +200,7 @@ const ContasPagarReceber = () => {
   const contasFornecedores = contasFiltradas.filter(conta => conta.destino_tipo === 'fornecedor');
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6 p-2 md:p-0">
       <ContaForm
         clientes={clientes}
         fornecedores={fornecedores}
@@ -208,72 +208,82 @@ const ContasPagarReceber = () => {
         onSuccess={carregarContas}
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex justify-between items-center">
+      <Card className="w-full">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg md:text-xl mb-4">
             Contas Cadastradas
-            <div className="flex space-x-2 flex-wrap">
-              <Select value={filtroStatus} onValueChange={setFiltroStatus}>
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
-                  <SelectItem value="aberto">Em Aberto</SelectItem>
-                  <SelectItem value="pago">Pago</SelectItem>
-                  <SelectItem value="vencido">Vencido</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={filtroBanco} onValueChange={setFiltroBanco}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Filtrar por banco" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos os bancos</SelectItem>
-                  {bancos.map((banco) => (
-                    <SelectItem key={banco.id} value={banco.id}>
-                      {banco.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={filtroCliente} onValueChange={setFiltroCliente}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Filtrar por cliente" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos os clientes</SelectItem>
-                  {clientes.map((cliente) => (
-                    <SelectItem key={cliente.id} value={cliente.id}>
-                      {cliente.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={filtroFornecedor} onValueChange={setFiltroFornecedor}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Filtrar por fornecedor" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos os fornecedores</SelectItem>
-                  {fornecedores.map((fornecedor) => (
-                    <SelectItem key={fornecedor.id} value={fornecedor.id}>
-                      {fornecedor.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </CardTitle>
+          
+          {/* Filtros responsivos */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2 md:gap-4">
+            <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                <SelectItem value="aberto">Em Aberto</SelectItem>
+                <SelectItem value="pago">Pago</SelectItem>
+                <SelectItem value="vencido">Vencido</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Select value={filtroBanco} onValueChange={setFiltroBanco}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Banco" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os bancos</SelectItem>
+                {bancos.map((banco) => (
+                  <SelectItem key={banco.id} value={banco.id}>
+                    {banco.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Select value={filtroCliente} onValueChange={setFiltroCliente}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Cliente" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os clientes</SelectItem>
+                {clientes.map((cliente) => (
+                  <SelectItem key={cliente.id} value={cliente.id}>
+                    {cliente.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Select value={filtroFornecedor} onValueChange={setFiltroFornecedor}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Fornecedor" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os fornecedores</SelectItem>
+                {fornecedores.map((fornecedor) => (
+                  <SelectItem key={fornecedor.id} value={fornecedor.id}>
+                    {fornecedor.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
-        <CardContent>
+        
+        <CardContent className="px-2 md:px-6">
           <Tabs defaultValue="clientes" className="w-full">
-            <TabsList>
-              <TabsTrigger value="clientes">Clientes ({contasClientes.length})</TabsTrigger>
-              <TabsTrigger value="fornecedores">Fornecedores ({contasFornecedores.length})</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsTrigger value="clientes" className="text-sm">
+                Clientes ({contasClientes.length})
+              </TabsTrigger>
+              <TabsTrigger value="fornecedores" className="text-sm">
+                Fornecedores ({contasFornecedores.length})
+              </TabsTrigger>
             </TabsList>
             
-            <TabsContent value="clientes">
+            <TabsContent value="clientes" className="mt-4">
               <ContasTable
                 contas={contasClientes}
                 baixasContas={baixasContas}
@@ -285,7 +295,7 @@ const ContasPagarReceber = () => {
               />
             </TabsContent>
             
-            <TabsContent value="fornecedores">
+            <TabsContent value="fornecedores" className="mt-4">
               <ContasTable
                 contas={contasFornecedores}
                 baixasContas={baixasContas}

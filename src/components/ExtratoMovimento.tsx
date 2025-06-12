@@ -35,7 +35,7 @@ const ExtratoMovimento = () => {
           <style>
             @page {
               size: A4 portrait;
-              margin: 20mm;
+              margin: 15mm;
             }
             
             * {
@@ -47,137 +47,117 @@ const ExtratoMovimento = () => {
             body { 
               font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
               color: #2d3748;
-              line-height: 1.5;
-              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-              min-height: 100vh;
+              line-height: 1.4;
+              font-size: 12px;
             }
             
             .container {
-              background: white;
-              border-radius: 16px;
-              box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-              padding: 40px;
-              margin: 20px auto;
+              width: 100%;
               max-width: 100%;
             }
             
             .header {
               text-align: center;
-              margin-bottom: 40px;
-              border-bottom: 4px solid #4299e1;
-              padding-bottom: 30px;
+              margin-bottom: 20px;
+              border-bottom: 3px solid #4299e1;
+              padding-bottom: 15px;
             }
             
             .header h1 {
               color: #2b6cb0;
-              font-size: 36px;
-              font-weight: 800;
-              margin-bottom: 12px;
-              text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+              font-size: 24px;
+              font-weight: bold;
+              margin-bottom: 8px;
             }
             
             .header .subtitle {
               color: #718096;
-              font-size: 18px;
-              font-weight: 500;
-              margin-bottom: 8px;
+              font-size: 14px;
+              margin-bottom: 5px;
             }
             
             .bank-info {
-              background: linear-gradient(135deg, #ebf8ff 0%, #e6fffa 100%);
-              border: 2px solid #bee3f8;
-              border-radius: 16px;
-              padding: 25px;
-              margin-bottom: 30px;
-              box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+              background: #f7fafc;
+              border: 1px solid #e2e8f0;
+              border-radius: 8px;
+              padding: 15px;
+              margin-bottom: 20px;
             }
             
             .bank-info h3 {
               color: #2c5282;
-              font-size: 22px;
-              font-weight: 700;
-              margin-bottom: 15px;
-              display: flex;
-              align-items: center;
-            }
-            
-            .bank-info h3:before {
-              content: "🏦";
-              margin-right: 12px;
-              font-size: 20px;
+              font-size: 16px;
+              font-weight: bold;
+              margin-bottom: 10px;
             }
             
             .bank-details {
               display: grid;
-              grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-              gap: 20px;
+              grid-template-columns: repeat(2, 1fr);
+              gap: 10px;
             }
             
             .bank-detail {
               background: white;
-              padding: 15px;
-              border-radius: 12px;
-              border-left: 5px solid #4299e1;
-              box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+              padding: 10px;
+              border-radius: 6px;
+              border-left: 3px solid #4299e1;
             }
             
             .detail-label {
-              font-weight: 700;
+              font-weight: bold;
               color: #2d3748;
-              font-size: 14px;
+              font-size: 11px;
               text-transform: uppercase;
-              letter-spacing: 0.5px;
             }
             
             .detail-value {
               color: #4a5568;
-              font-size: 16px;
-              margin-top: 5px;
-              font-weight: 600;
+              font-size: 12px;
+              margin-top: 3px;
             }
 
             .conciliacao-section {
-              background: linear-gradient(135deg, #f0fff4 0%, #f0f8ff 100%);
-              border: 2px solid #9ae6b4;
-              border-radius: 16px;
-              padding: 25px;
-              margin-bottom: 30px;
-              box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+              background: #f0fff4;
+              border: 1px solid #9ae6b4;
+              border-radius: 8px;
+              padding: 15px;
+              margin-bottom: 20px;
             }
 
             .conciliacao-title {
               color: #276749;
-              font-size: 22px;
-              font-weight: 700;
-              margin-bottom: 20px;
+              font-size: 16px;
+              font-weight: bold;
+              margin-bottom: 15px;
               text-align: center;
             }
 
             .conciliacao-grid {
               display: grid;
-              grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-              gap: 15px;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 10px;
             }
 
             .conciliacao-item {
               background: white;
-              padding: 15px;
-              border-radius: 12px;
+              padding: 10px;
+              border-radius: 6px;
               text-align: center;
-              border-left: 5px solid #48bb78;
-              box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+              border-left: 3px solid #48bb78;
             }
 
             .conciliacao-label {
-              font-weight: 600;
+              font-weight: bold;
               color: #2d3748;
-              font-size: 14px;
-              margin-bottom: 5px;
+              font-size: 10px;
+              margin-bottom: 3px;
+              text-transform: uppercase;
             }
 
             .conciliacao-value {
-              font-size: 18px;
-              font-weight: 800;
+              font-size: 12px;
+              font-weight: bold;
               color: #276749;
             }
 
@@ -191,86 +171,112 @@ const ExtratoMovimento = () => {
             
             .table-container {
               background: white;
-              border-radius: 16px;
+              border-radius: 8px;
               overflow: hidden;
-              box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-              margin-bottom: 30px;
+              margin-bottom: 20px;
+              border: 1px solid #e2e8f0;
             }
             
             table {
               width: 100%;
               border-collapse: collapse;
-              font-size: 13px;
+              font-size: 10px;
             }
             
             th {
-              background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+              background: #4299e1;
               color: white;
-              padding: 18px 15px;
+              padding: 8px 6px;
               text-align: left;
-              font-weight: 700;
-              font-size: 14px;
-              text-transform: uppercase;
-              letter-spacing: 0.5px;
-            }
-            
-            th:first-child {
-              border-top-left-radius: 16px;
-            }
-            
-            th:last-child {
-              border-top-right-radius: 16px;
+              font-weight: bold;
+              font-size: 10px;
+              border-bottom: 1px solid #3182ce;
             }
             
             td {
-              padding: 15px;
+              padding: 6px;
               border-bottom: 1px solid #e2e8f0;
-              font-size: 13px;
+              font-size: 9px;
+              word-wrap: break-word;
+            }
+            
+            tr {
+              page-break-inside: avoid;
+              page-break-after: auto;
             }
             
             tr:nth-child(even) {
               background-color: #f8fafc;
             }
             
-            tr:hover {
-              background-color: #edf2f7;
-              transform: scale(1.001);
-              transition: all 0.2s ease;
-            }
-            
             .text-right {
               text-align: right;
-              font-weight: 700;
+              font-weight: bold;
             }
             
             .valor-credito {
               color: #38a169;
-              font-weight: 700;
+              font-weight: bold;
             }
             
             .valor-debito {
               color: #e53e3e;
-              font-weight: 700;
+              font-weight: bold;
             }
             
             .saldo-positivo {
               color: #38a169;
-              font-weight: 700;
+              font-weight: bold;
             }
             
             .saldo-negativo {
               color: #e53e3e;
-              font-weight: 700;
+              font-weight: bold;
+            }
+            
+            .footer {
+              margin-top: 20px;
+              text-align: center;
+              font-size: 10px;
+              color: #718096;
+              border-top: 1px solid #e2e8f0;
+              padding-top: 10px;
             }
             
             @media print {
               body {
-                background: white !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
               }
-              .container {
-                box-shadow: none;
-                margin: 0;
-                padding: 20px;
+              
+              .table-container {
+                page-break-inside: avoid;
+              }
+              
+              tr {
+                page-break-inside: avoid;
+              }
+              
+              .conciliacao-grid {
+                grid-template-columns: repeat(5, 1fr);
+              }
+            }
+            
+            @media screen and (max-width: 768px) {
+              .bank-details {
+                grid-template-columns: 1fr;
+              }
+              
+              .conciliacao-grid {
+                grid-template-columns: repeat(2, 1fr);
+              }
+              
+              table {
+                font-size: 8px;
+              }
+              
+              th, td {
+                padding: 4px;
               }
             }
           </style>
@@ -354,11 +360,11 @@ const ExtratoMovimento = () => {
               <table>
                 <thead>
                   <tr>
-                    <th>📅 Data</th>
-                    <th>📝 Descrição</th>
-                    <th>🔢 Nº Nota</th>
-                    <th>💰 Valor</th>
-                    <th>💳 Saldo</th>
+                    <th style="width: 12%;">Data</th>
+                    <th style="width: 35%;">Descrição</th>
+                    <th style="width: 15%;">Nº Nota</th>
+                    <th style="width: 15%;">Valor</th>
+                    <th style="width: 15%;">Saldo</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -367,7 +373,7 @@ const ExtratoMovimento = () => {
                     return `
                       <tr>
                         <td>${new Date(mov.data + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
-                        <td><strong>${mov.descricao}</strong></td>
+                        <td style="word-break: break-word;">${mov.descricao}</td>
                         <td>${mov.numero_nota || '-'}</td>
                         <td class="text-right ${isCredito ? 'valor-credito' : 'valor-debito'}">
                           ${isCredito ? '+' : '-'} R$ ${mov.valor.toFixed(2).replace('.', ',')}
@@ -380,6 +386,10 @@ const ExtratoMovimento = () => {
                   }).join('')}
                 </tbody>
               </table>
+            </div>
+            
+            <div class="footer">
+              © 2025 FINANCEIRO - RICCO. Todos os direitos reservados a @RICARDOCACTUS.
             </div>
           </div>
         </body>
@@ -402,25 +412,30 @@ const ExtratoMovimento = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <Card>
+    <div className="max-w-4xl mx-auto space-y-4 md:space-y-6 p-2 md:p-0">
+      <Card className="w-full">
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
+          <CardTitle className="flex items-center space-x-2 text-lg md:text-xl">
             <FileText className="w-5 h-5" />
             <span>Extrato do Movimento</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4 md:space-y-6">
           <div className="space-y-2">
             <Label htmlFor="banco">Banco *</Label>
             <Select value={bancoId} onValueChange={setBancoId}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Selecione o banco" />
               </SelectTrigger>
               <SelectContent>
                 {bancos.map((banco) => (
                   <SelectItem key={banco.id} value={banco.id}>
-                    {banco.nome} - Ag: {banco.agencia} Conta: {banco.conta}
+                    <div className="flex flex-col sm:flex-row sm:items-center">
+                      <span className="font-medium">{banco.nome}</span>
+                      <span className="text-sm text-gray-500 sm:ml-2">
+                        Ag: {banco.agencia} Conta: {banco.conta}
+                      </span>
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -435,6 +450,7 @@ const ExtratoMovimento = () => {
                 type="date"
                 value={dataInicio}
                 onChange={(e) => setDataInicio(e.target.value)}
+                className="w-full"
               />
             </div>
 
@@ -445,6 +461,7 @@ const ExtratoMovimento = () => {
                 type="date"
                 value={dataFim}
                 onChange={(e) => setDataFim(e.target.value)}
+                className="w-full"
               />
             </div>
           </div>
@@ -452,37 +469,37 @@ const ExtratoMovimento = () => {
           {conciliacao && (
             <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-green-200">
               <CardHeader>
-                <CardTitle className="text-green-800">Conciliação Bancária</CardTitle>
+                <CardTitle className="text-green-800 text-lg">Conciliação Bancária</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 text-sm">
                   <div className="text-center">
-                    <div className="text-gray-600">Saldo Inicial</div>
-                    <div className={`font-bold ${conciliacao.saldoInicial >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <div className="text-gray-600 text-xs font-medium">Saldo Inicial</div>
+                    <div className={`font-bold text-sm md:text-base ${conciliacao.saldoInicial >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       R$ {conciliacao.saldoInicial.toFixed(2)}
                     </div>
                   </div>
                   <div className="text-center">
-                    <div className="text-gray-600">Total Entradas</div>
-                    <div className="font-bold text-green-600">
+                    <div className="text-gray-600 text-xs font-medium">Total Entradas</div>
+                    <div className="font-bold text-green-600 text-sm md:text-base">
                       + R$ {conciliacao.totalEntradas.toFixed(2)}
                     </div>
                   </div>
                   <div className="text-center">
-                    <div className="text-gray-600">Total Saídas</div>
-                    <div className="font-bold text-red-600">
+                    <div className="text-gray-600 text-xs font-medium">Total Saídas</div>
+                    <div className="font-bold text-red-600 text-sm md:text-base">
                       - R$ {conciliacao.totalSaidas.toFixed(2)}
                     </div>
                   </div>
                   <div className="text-center">
-                    <div className="text-gray-600">Saldo Final</div>
-                    <div className={`font-bold ${conciliacao.saldoFinal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <div className="text-gray-600 text-xs font-medium">Saldo Final</div>
+                    <div className={`font-bold text-sm md:text-base ${conciliacao.saldoFinal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       R$ {conciliacao.saldoFinal.toFixed(2)}
                     </div>
                   </div>
-                  <div className="text-center md:col-span-2">
-                    <div className="text-gray-600">Movimentações</div>
-                    <div className="font-bold text-blue-600">
+                  <div className="text-center col-span-2 md:col-span-1">
+                    <div className="text-gray-600 text-xs font-medium">Movimentações</div>
+                    <div className="font-bold text-blue-600 text-sm md:text-base">
                       {conciliacao.quantidadeMovimentacoes} registros
                     </div>
                   </div>
