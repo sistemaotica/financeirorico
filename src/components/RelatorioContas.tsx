@@ -23,13 +23,23 @@ const RelatorioContas = () => {
   };
 
   const formatDateForDisplay = (dateString: string) => {
-    // Cria uma data local sem considerar timezone
+    // Garantir que a data seja exibida exatamente como está no banco, sem conversão de timezone
     const [year, month, day] = dateString.split('-');
     const localDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
     return localDate.toLocaleDateString('pt-BR');
   };
 
   const gerarRelatorio = () => {
+    console.log('Gerando relatório com filtros:', {
+      tipoRelatorio,
+      statusRelatorio,
+      tipoData,
+      dataInicio,
+      dataFim,
+      tipoDestino,
+      destinoId
+    });
+
     // Filtrar contas baseado nos critérios selecionados
     let contasFiltradas = [...contas];
 
@@ -61,13 +71,13 @@ const RelatorioContas = () => {
       contasFiltradas = contasFiltradas.filter(conta => {
         const dataComparacao = tipoData === 'baixa' ? conta.data_pagamento : conta.data_vencimento;
         if (!dataComparacao) return false;
-        const dataComparacaoObj = new Date(dataComparacao);
-        const dataInicioObj = new Date(dataInicio);
-        const dataFimObj = new Date(dataFim);
-        return dataComparacaoObj >= dataInicioObj && dataComparacaoObj <= dataFimObj;
+        
+        // Usar comparação direta de strings de data (YYYY-MM-DD) para evitar problemas de timezone
+        return dataComparacao >= dataInicio && dataComparacao <= dataFim;
       });
     }
 
+    console.log('Contas filtradas:', contasFiltradas.length);
     gerarPDF(contasFiltradas);
   };
 

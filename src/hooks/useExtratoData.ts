@@ -46,9 +46,11 @@ export const useExtratoData = () => {
       // Buscar saldo inicial do banco antes do período
       const bancoSelecionado = bancos.find(b => b.id === bancoId);
       
-      // Corrigir o problema de timezone usando formato correto para o banco
+      // Garantir que as datas sejam usadas exatamente como selecionadas
       const dataInicioFormatted = dataInicio;
       const dataFimFormatted = dataFim;
+      
+      console.log('Filtros aplicados:', { bancoId, dataInicioFormatted, dataFimFormatted });
       
       // Buscar lançamentos
       const { data: lancamentos, error: errorLancamentos } = await supabase
@@ -96,6 +98,9 @@ export const useExtratoData = () => {
         });
         return;
       }
+
+      console.log('Lançamentos encontrados:', lancamentos?.length || 0);
+      console.log('Baixas encontradas:', baixas?.length || 0);
 
       // Combinar e ordenar movimentações
       const movimentacoesCombinadas: MovimentacaoExtrato[] = [];
@@ -168,9 +173,13 @@ export const useExtratoData = () => {
         quantidadeMovimentacoes: movimentacoesCombinadas.length
       };
 
+      console.log('Movimentações processadas:', movimentacoesCombinadas.length);
+      console.log('Conciliação calculada:', conciliacaoData);
+
       setMovimentacoes(movimentacoesCombinadas);
       setConciliacao(conciliacaoData);
     } catch (error) {
+      console.error('Erro ao carregar extrato:', error);
       toast({
         title: "Erro",
         description: "Erro ao carregar extrato",
