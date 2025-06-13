@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -210,6 +209,13 @@ const Lancamentos = () => {
     }).format(value);
   };
 
+  const formatDateForDisplay = (dateString: string) => {
+    // Cria uma data local sem considerar timezone
+    const [year, month, day] = dateString.split('-');
+    const localDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    return localDate.toLocaleDateString('pt-BR');
+  };
+
   return (
     <div className="space-y-6">
       {/* Formulário de Lançamento */}
@@ -325,7 +331,7 @@ const Lancamentos = () => {
               <TableBody>
                 {lancamentos.map((lancamento) => (
                   <TableRow key={lancamento.id}>
-                    <TableCell>{new Date(lancamento.data).toLocaleDateString('pt-BR')}</TableCell>
+                    <TableCell>{formatDateForDisplay(lancamento.data)}</TableCell>
                     <TableCell>{lancamento.bancos?.nome}</TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded text-sm ${

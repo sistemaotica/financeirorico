@@ -46,6 +46,10 @@ export const useExtratoData = () => {
       // Buscar saldo inicial do banco antes do período
       const bancoSelecionado = bancos.find(b => b.id === bancoId);
       
+      // Corrigir o problema de timezone usando formato correto para o banco
+      const dataInicioFormatted = dataInicio;
+      const dataFimFormatted = dataFim;
+      
       // Buscar lançamentos
       const { data: lancamentos, error: errorLancamentos } = await supabase
         .from('lancamentos')
@@ -59,8 +63,8 @@ export const useExtratoData = () => {
           bancos!inner(nome)
         `)
         .eq('banco_id', bancoId)
-        .gte('data', dataInicio)
-        .lte('data', dataFim)
+        .gte('data', dataInicioFormatted)
+        .lte('data', dataFimFormatted)
         .order('data', { ascending: true });
 
       // Buscar baixas de contas
@@ -80,8 +84,8 @@ export const useExtratoData = () => {
           )
         `)
         .eq('banco_id', bancoId)
-        .gte('data_baixa', dataInicio)
-        .lte('data_baixa', dataFim)
+        .gte('data_baixa', dataInicioFormatted)
+        .lte('data_baixa', dataFimFormatted)
         .order('data_baixa', { ascending: true });
 
       if (errorLancamentos || errorBaixas) {

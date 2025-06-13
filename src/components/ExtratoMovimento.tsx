@@ -18,6 +18,13 @@ const ExtratoMovimento = () => {
     return `R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
+  const formatDateForDisplay = (dateString: string) => {
+    // Cria uma data local sem considerar timezone
+    const [year, month, day] = dateString.split('-');
+    const localDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    return localDate.toLocaleDateString('pt-BR');
+  };
+
   const gerarExtrato = async () => {
     if (!bancoId || !dataInicio || !dataFim) {
       return;
@@ -410,7 +417,7 @@ const ExtratoMovimento = () => {
                 </div>
                 <div class="bank-detail">
                   <div class="detail-label">Período</div>
-                  <div class="detail-value">${new Date(dataInicio).toLocaleDateString('pt-BR')} a ${new Date(dataFim).toLocaleDateString('pt-BR')}</div>
+                  <div class="detail-value">${formatDateForDisplay(dataInicio)} a ${formatDateForDisplay(dataFim)}</div>
                 </div>
               </div>
             </div>
@@ -469,7 +476,7 @@ const ExtratoMovimento = () => {
                     const isCredito = mov.tipo === 'credito' || mov.tipo === 'baixa_receber';
                     return `
                       <tr>
-                        <td>${new Date(mov.data + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
+                        <td>${formatDateForDisplay(mov.data)}</td>
                         <td style="word-break: break-word; overflow-wrap: break-word;">${mov.descricao}</td>
                         <td>${mov.numero_nota || '-'}</td>
                         <td class="text-right ${isCredito ? 'valor-credito' : 'valor-debito'}">
