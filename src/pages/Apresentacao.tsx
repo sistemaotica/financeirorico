@@ -78,7 +78,7 @@ const Apresentacao = () => {
               <h1 className="text-2xl font-bold text-gray-900">FINANCEIRO RICCO</h1>
             </div>
             <Button 
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/sistema')}
               className="bg-blue-600 hover:bg-blue-700"
             >
               <ArrowRight className="w-4 h-4 mr-2" />
@@ -114,7 +114,7 @@ const Apresentacao = () => {
                             <Button 
                               size="lg" 
                               className="bg-white text-gray-900 hover:bg-gray-100 font-semibold px-8 py-3 w-fit"
-                              onClick={() => navigate('/')}
+                              onClick={() => navigate('/sistema')}
                             >
                               <ArrowRight className="w-5 h-5 mr-2" />
                               Começar Agora
@@ -186,7 +186,7 @@ const Apresentacao = () => {
               <Button 
                 size="lg" 
                 className="bg-white text-blue-600 hover:bg-gray-100 font-semibold px-8 py-3 w-full sm:w-auto"
-                onClick={() => navigate('/')}
+                onClick={() => navigate('/sistema')}
               >
                 <ArrowRight className="w-5 h-5 mr-2" />
                 Acessar Sistema
