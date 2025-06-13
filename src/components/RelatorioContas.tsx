@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,6 +20,13 @@ const RelatorioContas = () => {
 
   const formatarValor = (valor: number) => {
     return `R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
+  const formatDateForDisplay = (dateString: string) => {
+    // Cria uma data local sem considerar timezone
+    const [year, month, day] = dateString.split('-');
+    const localDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    return localDate.toLocaleDateString('pt-BR');
   };
 
   const gerarRelatorio = () => {
@@ -90,7 +96,7 @@ const RelatorioContas = () => {
               color: #2d3748;
               line-height: 1.3;
               background: white;
-              font-size: 11px;
+              font-size: 12px;
             }
             
             .container {
@@ -109,7 +115,7 @@ const RelatorioContas = () => {
             
             .header h1 {
               color: #2b6cb0;
-              font-size: 22px;
+              font-size: 24px;
               font-weight: 700;
               margin-bottom: 5px;
               text-align: center;
@@ -117,7 +123,7 @@ const RelatorioContas = () => {
             
             .header .subtitle {
               color: #718096;
-              font-size: 13px;
+              font-size: 14px;
               font-weight: 500;
               text-align: center;
             }
@@ -156,13 +162,13 @@ const RelatorioContas = () => {
             .filter-label {
               font-weight: 600;
               color: #2d3748;
-              font-size: 10px;
+              font-size: 11px;
               text-align: center;
             }
             
             .filter-value {
               color: #4a5568;
-              font-size: 10px;
+              font-size: 11px;
               margin-top: 2px;
               text-align: center;
             }
@@ -177,7 +183,7 @@ const RelatorioContas = () => {
             table {
               width: 100%;
               border-collapse: collapse;
-              font-size: 9px;
+              font-size: 10px;
               page-break-inside: auto;
             }
             
@@ -187,7 +193,7 @@ const RelatorioContas = () => {
               padding: 10px 6px;
               text-align: center;
               font-weight: 600;
-              font-size: 9px;
+              font-size: 10px;
               text-transform: uppercase;
               letter-spacing: 0.3px;
               page-break-inside: avoid;
@@ -197,7 +203,7 @@ const RelatorioContas = () => {
             td {
               padding: 8px 6px;
               border-bottom: 1px solid #e2e8f0;
-              font-size: 9px;
+              font-size: 10px;
               word-wrap: break-word;
               max-width: 80px;
               vertical-align: middle;
@@ -234,7 +240,7 @@ const RelatorioContas = () => {
               background: #2d3748 !important;
               color: white !important;
               font-weight: 700;
-              font-size: 10px;
+              font-size: 11px;
             }
             
             .total-row td {
@@ -259,7 +265,7 @@ const RelatorioContas = () => {
             }
             
             .summary-card h4 {
-              font-size: 10px;
+              font-size: 11px;
               font-weight: 600;
               margin-bottom: 6px;
               opacity: 0.9;
@@ -267,7 +273,7 @@ const RelatorioContas = () => {
             }
             
             .summary-card .value {
-              font-size: 14px;
+              font-size: 15px;
               font-weight: 700;
               text-align: center;
             }
@@ -276,7 +282,7 @@ const RelatorioContas = () => {
               display: inline-block;
               padding: 3px 6px;
               border-radius: 3px;
-              font-size: 8px;
+              font-size: 9px;
               font-weight: 600;
               text-transform: uppercase;
               text-align: center;
@@ -335,43 +341,6 @@ const RelatorioContas = () => {
               }
               
               body {
-                font-size: 9px;
-              }
-              
-              .header h1 {
-                font-size: 18px;
-              }
-              
-              .header .subtitle {
-                font-size: 11px;
-              }
-              
-              .filter-grid {
-                grid-template-columns: repeat(2, 1fr);
-              }
-              
-              table {
-                font-size: 7px;
-              }
-              
-              th, td {
-                padding: 4px 3px;
-                font-size: 7px;
-              }
-              
-              .summary-cards {
-                grid-template-columns: 1fr;
-              }
-              
-              .status-badge {
-                font-size: 6px;
-                padding: 2px 4px;
-              }
-            }
-            
-            /* Configurações para tablets */
-            @media screen and (min-width: 769px) and (max-width: 1024px) {
-              body {
                 font-size: 10px;
               }
               
@@ -379,13 +348,50 @@ const RelatorioContas = () => {
                 font-size: 20px;
               }
               
+              .header .subtitle {
+                font-size: 12px;
+              }
+              
+              .filter-grid {
+                grid-template-columns: repeat(2, 1fr);
+              }
+              
               table {
                 font-size: 8px;
               }
               
               th, td {
-                padding: 6px 4px;
+                padding: 4px 3px;
                 font-size: 8px;
+              }
+              
+              .summary-cards {
+                grid-template-columns: 1fr;
+              }
+              
+              .status-badge {
+                font-size: 7px;
+                padding: 2px 4px;
+              }
+            }
+            
+            /* Configurações para tablets */
+            @media screen and (min-width: 769px) and (max-width: 1024px) {
+              body {
+                font-size: 11px;
+              }
+              
+              .header h1 {
+                font-size: 22px;
+              }
+              
+              table {
+                font-size: 9px;
+              }
+              
+              th, td {
+                padding: 6px 4px;
+                font-size: 9px;
               }
               
               .filter-grid {
@@ -421,7 +427,7 @@ const RelatorioContas = () => {
                 </div>
                 <div class="filter-item">
                   <div class="filter-label">Período</div>
-                  <div class="filter-value">${dataInicio && dataFim ? `📅 ${new Date(dataInicio).toLocaleDateString('pt-BR')} a ${new Date(dataFim).toLocaleDateString('pt-BR')}` : '🗓️ Sem filtro'}</div>
+                  <div class="filter-value">${dataInicio && dataFim ? `📅 ${formatDateForDisplay(dataInicio)} a ${formatDateForDisplay(dataFim)}` : '🗓️ Sem filtro'}</div>
                 </div>
                 <div class="filter-item">
                   <div class="filter-label">Destino</div>
@@ -451,7 +457,7 @@ const RelatorioContas = () => {
                     const status = saldo > 0 ? 'aberto' : 'pago';
                     return `
                       <tr>
-                        <td>${new Date(conta.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
+                        <td>${formatDateForDisplay(conta.data_vencimento)}</td>
                         <td style="word-break: break-word; overflow-wrap: break-word;"><strong>${conta.destino_tipo === 'cliente' ? conta.clientes?.nome || 'N/A' : conta.fornecedores?.nome || 'N/A'}</strong></td>
                         <td style="word-break: break-word; overflow-wrap: break-word;">${conta.referencia}</td>
                         <td>${conta.parcela_numero}/${conta.parcela_total}</td>
