@@ -12,7 +12,7 @@ const Apresentacao = () => {
   const slides = [
     {
       id: 1,
-      title: "Sistema Financeiro RICCO",
+      title: "Sistema Financeiro RICCO - TESTE",
       subtitle: "Controle Total das suas Finanças",
       description: "Uma solução completa para gestão financeira empresarial, desenvolvida para oferecer total controle sobre suas contas a pagar, receber, lançamentos bancários e relatórios detalhados.",
       icon: <DollarSign className="w-16 h-16 text-blue-500" />,
